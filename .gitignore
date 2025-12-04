@@ -2,6 +2,16 @@
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
+.env.test
+backend/.env
+backend/.env.local
+backend/.env.*
+frontend/.env
+frontend/.env.local
+frontend/.env.*
+*.env
 
 # Python
 __pycache__/
@@ -45,6 +55,13 @@ db.sqlite3-journal
 /media
 /staticfiles
 /static
+
+# Backend specific
+backend/logs/
+backend/media/
+backend/staticfiles/
+backend/.venv/
+backend/*.log
 
 # Node
 node_modules/

@@ -1,0 +1,41 @@
+{
+  "name": "ResumeAI Pro – Smart Resume Builder & Job Matcher",
+  "short_name": "ResumeAI Pro",
+  "description": "Build ATS-optimized resumes, get personalized improvements, and match with real job postings in seconds.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "business", "education"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Resume Builder",
+      "short_name": "Builder",
+      "description": "Build your resume",
+      "url": "/builder",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
+
+
+
+
+
+

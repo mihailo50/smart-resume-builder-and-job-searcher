@@ -1,0 +1,10 @@
+# Supabase SQL migrations directory
+
+
+
+
+
+
+
+
+
