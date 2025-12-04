@@ -1,0 +1,19 @@
+# Template Thumbnails Directory
+
+This directory should contain thumbnail images for resume templates:
+- modern-indigo-thumb.png
+- minimalist-black-thumb.png
+- creative-violet-thumb.png
+- executive-gold-thumb.png
+- tech-cyan-thumb.png
+- sidebar-teal-thumb.png
+- ats-classic-thumb.png
+- elegant-emerald-thumb.png
+
+The application has fallback handling for missing thumbnails, so the app will work without them, but thumbnails should be added for better UX.
+
+
+
+
+
+
