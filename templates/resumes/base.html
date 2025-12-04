@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ full_name }} - Resume</title>
+    <style>
+        {% include 'resumes/css/base.css' %}
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="resume-container {% block container_class %}{% endblock %}">
+        {% block header %}{% endblock %}
+        
+        {% block contact %}{% endblock %}
+        
+        {% block content %}
+        <div class="resume-content">
+            {% if summary %}
+            <section class="section">
+                <h2 class="section-title">Professional Summary</h2>
+                <p class="summary-text">{{ summary }}</p>
+            </section>
+            {% endif %}
+            
+            {% if experiences %}
+            <section class="section">
+                <h2 class="section-title">Work Experience</h2>
+                {% for exp in experiences %}
+                <div class="experience-item {% if not forloop.last %}mb-4{% endif %}">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold text-lg">{{ exp.position }}</h3>
+                            <p class="text-gray-600">{{ exp.company }}{% if exp.location %} • {{ exp.location }}{% endif %}</p>
+                        </div>
+                        <div class="text-right text-sm text-gray-600">
+                            <span>{{ exp.start_date|date:"M Y" }}</span>
+                            {% if exp.is_current %}
+                            <span> - Present</span>
+                            {% elif exp.end_date %}
+                            <span> - {{ exp.end_date|date:"M Y" }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if exp.description %}
+                    <p class="text-gray-700">{{ exp.description|linebreaks }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </section>
+            {% endif %}
+            
+            {% if educations %}
+            <section class="section">
+                <h2 class="section-title">Education</h2>
+                {% for edu in educations %}
+                <div class="education-item {% if not forloop.last %}mb-4{% endif %}">
+                    <h3 class="font-bold text-lg">{{ edu.degree }}{% if edu.field_of_study %} in {{ edu.field_of_study }}{% endif %}</h3>
+                    <p class="text-gray-600">{{ edu.institution }}</p>
+                    <p class="text-sm text-gray-500">
+                        {{ edu.start_date|date:"M Y" }}
+                        {% if edu.is_current %}
+                        - Present
+                        {% elif edu.end_date %}
+                        - {{ edu.end_date|date:"M Y" }}
+                        {% endif %}
+                    </p>
+                    {% if edu.description %}
+                    <p class="text-gray-700 mt-2">{{ edu.description }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </section>
+            {% endif %}
+            
+            {% if skills_by_category %}
+            <section class="section">
+                <h2 class="section-title">Skills</h2>
+                {% for category, skills_list in skills_by_category.items %}
+                <div class="mb-3">
+                    <h4 class="font-semibold text-gray-800">{{ category }}</h4>
+                    <div class="flex flex-wrap gap-2 mt-1">
+                        {% for skill in skills_list %}
+                        <span class="skill-chip">{{ skill.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </section>
+            {% endif %}
+        </div>
+        {% endblock %}
+    </div>
+</body>
+</html>
+
+
+
+
+
+
+
