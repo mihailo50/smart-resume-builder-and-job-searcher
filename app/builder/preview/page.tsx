@@ -77,9 +77,54 @@ export default function PreviewPage() {
   const [exporting, setExporting] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('modern-indigo');
-  const [selectedFont, setSelectedFont] = useState<FontCombination>('modern');
+  const [selectedFont, setSelectedFont] = useState<FontCombination>(FONT_COMBINATIONS[0]);
   const [atsMode, setAtsMode] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string>('');
+  
+  const openExport = searchParams.get('openExport');
+
+  useEffect(() => {
+    if (openExport === 'true' && !loading && resume) {
+      setShowExportDialog(true);
+    }
+  }, [openExport, loading, resume]);
+  
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+
+  // Load saved preferences from resume
+  useEffect(() => {
+    if (resume) {
+      // Try to load saved template/font/ats_mode from resume metadata
+      const savedTemplate = (resume as any).last_template;
+      const savedFont = (resume as any).last_font;
+      const savedAtsMode = (resume as any).ats_mode;
+      const savedPhotoUrl = (resume as any).photo_url;
+      
+      if (savedTemplate && TEMPLATES.find(t => t.id === savedTemplate)) {
+        setSelectedTemplate(savedTemplate as TemplateId);
+      }
+      if (savedFont) {
+        const font = FONT_COMBINATIONS.find(f => f.heading === savedFont || f.label === savedFont);
+        if (font) {
+          setSelectedFont(font);
+        } else {
+          // Map string values
+          const fontMap: Record<string, FontCombination> = {
+            'modern': FONT_COMBINATIONS[0],
+            'classic': FONT_COMBINATIONS[1],
+            'creative': FONT_COMBINATIONS[2],
+          };
+          setSelectedFont(fontMap[savedFont] || FONT_COMBINATIONS[0]);
+        }
+      }
+      if (savedAtsMode !== undefined) {
+        setAtsMode(savedAtsMode);
+      }
+      if (savedPhotoUrl) {
+        setPhotoUrl(savedPhotoUrl);
+      }
+    }
+  }, [resume]);
   
   // Load resume data
   useEffect(() => {
@@ -94,10 +139,19 @@ export default function PreviewPage() {
         setLoading(true);
         const data = await api.get<ResumeData>(`/v1/resumes/${resumeId}/`);
         setResume(data);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to load resume:', error);
-        toast.error('Failed to load resume');
-        router.push('/dashboard');
+        const errorMessage = error?.message || 'Failed to load resume';
+        toast.error(errorMessage, {
+          description: errorMessage.includes('Network error') 
+            ? 'Please ensure the backend server is running and accessible.'
+            : 'Please try again or contact support if the issue persists.',
+          duration: 5000,
+        });
+        // Don't redirect immediately - let user see the error
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 3000);
       } finally {
         setLoading(false);
       }
@@ -114,35 +168,69 @@ export default function PreviewPage() {
 
     setExporting(true);
     try {
-      const response = await api.post<{
-        file_url: string;
-        download_url: string;
-        expires_at: string;
-      }>(`/v1/resumes/${resumeId}/export/`, {
-        format,
-        template: selectedTemplate,
-        font: selectedFont,
-        ats_mode: atsMode,
-        photo_url: photoUrl || undefined,
+      // Map font combination to backend format
+      let fontValue = 'modern';
+      if (typeof selectedFont === 'string') {
+        fontValue = selectedFont;
+      } else {
+        const fontHeading = selectedFont.heading || '';
+        if (fontHeading.includes('Inter')) {
+          fontValue = 'modern';
+        } else if (fontHeading.includes('Roboto')) {
+          fontValue = 'classic';
+        } else if (fontHeading.includes('Space') || fontHeading.includes('Poppins') || fontHeading.includes('Lato') || fontHeading.includes('Open Sans')) {
+          fontValue = 'creative';
+        }
+      }
+      
+      const token = localStorage.getItem('auth_token');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+      
+      const response = await fetch(`${apiUrl}/v1/resumes/${resumeId}/export/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          format,
+          template: selectedTemplate,
+          font: fontValue,
+          ats_mode: atsMode,
+          photo_url: photoUrl || undefined,
+        }),
       });
       
-      // Download the file
-      const link = document.createElement('a');
-      link.href = response.download_url;
-      link.download = `resume_${resumeId}.${format}`;
-      link.click();
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Export failed:', response.status, errorText);
+        throw new Error(`Export failed: ${response.status} ${response.statusText}`);
+      }
+      
+      const blob = await response.blob();
+      console.log('Blob received:', blob.size, 'bytes, type:', blob.type);
+      
+      // Create a blob URL that is persistent
+      const blobUrl = window.URL.createObjectURL(blob);
+      setDownloadUrl(blobUrl);
+      
+      // Strategy 1: Standard Anchor Click (Hidden)
+      const filename = `${resume.title || 'Resume'}_${selectedTemplate}.${format}`;
+      const a = document.createElement("a");
+      a.style.display = 'none';
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup after delay
+      setTimeout(() => {
+        document.body.removeChild(a);
+        // Do NOT revoke the URL yet so the manual button works
+      }, 100);
       
       setShowExportDialog(false);
-      
-      // Confetti animation
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#6366f1', '#8b5cf6'],
-      });
-      
-      toast.success(`${format.toUpperCase()} exported successfully!`);
+      toast.success('Resume ready! If download didn\'t start, click the button below.');
     } catch (error: any) {
       console.error('Export failed:', error);
       toast.error(error?.message || `Failed to export ${format.toUpperCase()}`);
@@ -480,6 +568,32 @@ export default function PreviewPage() {
                     Back to Dashboard
                   </Button>
                 </div>
+                
+                {downloadUrl && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center mt-4 p-4 bg-muted/30 rounded-lg border border-border/50 max-w-md mx-auto"
+                  >
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Download didn't start automatically?
+                    </p>
+                    <Button 
+                      variant="default"
+                      onClick={() => {
+                        const a = document.createElement("a");
+                        a.href = downloadUrl;
+                        a.download = `${resume.title || 'Resume'}_${selectedTemplate}.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                      }}
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Click here to download manually
+                    </Button>
+                  </motion.div>
+                )}
               </>
             ) : (
               <Card className="mb-6">
