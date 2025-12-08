@@ -98,6 +98,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+            'string_if_invalid': '',  # Don't fail on missing template variables
         },
     },
 ]
@@ -203,6 +204,18 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '').split(',') if os.getenv('CORS_ALLOWED_ORIGINS') else []
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all origins in development
+CORS_EXPOSE_HEADERS = ['Content-Disposition', 'Content-Length', 'Content-Type']
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # drf-spectacular configuration
 SPECTACULAR_SETTINGS = {

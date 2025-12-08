@@ -48,8 +48,8 @@ class Command(BaseCommand):
         parser.add_argument(
             '--width',
             type=int,
-            default=400,
-            help='Thumbnail width in pixels (default: 400)',
+            default=380,
+            help='Thumbnail width in pixels (default: 380)',
         )
         parser.add_argument(
             '--dpi',
@@ -123,7 +123,7 @@ class Command(BaseCommand):
             
             if not pdf_path.exists():
                 self.stdout.write(
-                    self.style.WARNING(f'  ⚠ PDF not found: {pdf_path}')
+                    self.style.WARNING(f'  WARNING: PDF not found: {pdf_path}')
                 )
                 error_count += 1
                 continue
@@ -138,7 +138,7 @@ class Command(BaseCommand):
                 
                 if len(pdf_document) == 0:
                     self.stdout.write(
-                        self.style.WARNING(f'  ⚠ PDF has no pages: {pdf_filename}')
+                        self.style.WARNING(f'  WARNING: PDF has no pages: {pdf_filename}')
                     )
                     pdf_document.close()
                     error_count += 1
@@ -158,12 +158,20 @@ class Command(BaseCommand):
                 # Convert to PIL Image
                 img = PILImage.frombytes("RGB", [pix.width, pix.height], pix.samples)
                 
-                # Calculate height maintaining aspect ratio
-                aspect_ratio = img.height / img.width
-                height = int(width * aspect_ratio)
+                # Target dimensions: 380×500px
+                target_width = width  # 380px
+                target_height = 500
                 
-                # Resize to thumbnail size
-                img.thumbnail((width, height), PILImage.Resampling.LANCZOS)
+                # Resize to exact thumbnail size (maintains aspect ratio, may crop)
+                img.thumbnail((target_width, target_height), PILImage.Resampling.LANCZOS)
+                
+                # If image is smaller than target, create a canvas and center it
+                if img.width < target_width or img.height < target_height:
+                    canvas = PILImage.new("RGB", (target_width, target_height), (255, 255, 255))
+                    x_offset = (target_width - img.width) // 2
+                    y_offset = (target_height - img.height) // 2
+                    canvas.paste(img, (x_offset, y_offset))
+                    img = canvas
                 
                 # Save thumbnail
                 img.save(thumbnail_path, 'PNG', optimize=True)
@@ -171,13 +179,13 @@ class Command(BaseCommand):
                 pdf_document.close()
                 
                 self.stdout.write(
-                    self.style.SUCCESS(f'  ✓ Generated: {thumbnail_filename} ({img.width}x{img.height})')
+                    self.style.SUCCESS(f'  OK Generated: {thumbnail_filename} ({img.width}x{img.height})')
                 )
                 success_count += 1
                 
             except Exception as e:
                 self.stdout.write(
-                    self.style.ERROR(f'  ✗ Error processing {pdf_filename}: {str(e)}')
+                    self.style.ERROR(f'  ERROR processing {pdf_filename}: {str(e)}')
                 )
                 error_count += 1
         

@@ -147,9 +147,24 @@ class PremiumResumePDFGenerator:
         template_path = f'resumes/{template_name}.html'
         html_content = render_to_string(template_path, context)
         
+        # CRITICAL DEBUG: Log what's in context
+        logger.error(f"=== PDF GENERATION DEBUG ===")
+        logger.error(f"Template: {template_name}")
+        logger.error(f"Full name: '{context.get('full_name', 'MISSING')}'")
+        logger.error(f"Title: '{context.get('title', 'MISSING')}'")
+        logger.error(f"Summary length: {len(context.get('summary', ''))}")
+        logger.error(f"Experiences count: {len(context.get('experiences', []))}")
+        logger.error(f"Projects count: {len(context.get('projects', []))}")
+        logger.error(f"Skills count: {len(context.get('skills', []))}")
+        logger.error(f"Educations count: {len(context.get('educations', []))}")
+        logger.error(f"Certifications count: {len(context.get('certifications', []))}")
+        logger.error(f"HTML length: {len(html_content)}")
+        logger.error(f"HTML preview (first 500 chars): {html_content[:500]}")
+        
         # Generate PDF
         try:
             pdf_bytes = self._generate_pdf_from_html(html_content, template_name)
+            logger.error(f"PDF generated: {len(pdf_bytes)} bytes")
             return (pdf_bytes, html_content)
         except Exception as e:
             logger.error(f"Error generating PDF: {e}")
@@ -177,8 +192,13 @@ class PremiumResumePDFGenerator:
         # Get user profile data
         user_profile = resume_data.get('user_profile', {})
         
-        # Prepare name and title
-        full_name = resume_data.get('full_name') or user_profile.get('full_name') or resume_data.get('title', 'Your Name')
+        # Prepare name and title - use title field as name if full_name not available
+        full_name = (
+            resume_data.get('full_name') or 
+            user_profile.get('full_name') or 
+            resume_data.get('title', '') or 
+            'Your Name'
+        )
         
         # Generate initials for fallback
         initials = self._generate_initials(full_name)
@@ -192,21 +212,37 @@ class PremiumResumePDFGenerator:
             'github': resume_data.get('github_url') or user_profile.get('github_url', ''),
             'portfolio': resume_data.get('portfolio_url') or user_profile.get('portfolio_url', ''),
         }
-        title = resume_data.get('title') or resume_data.get('position_title', '')
+        
+        # Professional title/tagline
+        title = (
+            resume_data.get('professional_tagline') or 
+            resume_data.get('title') or 
+            resume_data.get('position_title', '')
+        )
         
         # Sort experiences by start date (most recent first)
-        experiences = sorted(
-            resume_data.get('experiences', []),
-            key=lambda x: x.get('start_date', ''),
-            reverse=True
-        )
+        # CRITICAL: Ensure we have a list, not None
+        experiences_raw = resume_data.get('experiences') or []
+        logger.error(f"RAW experiences from resume_data: {type(experiences_raw)}, length: {len(experiences_raw) if isinstance(experiences_raw, list) else 'NOT A LIST'}")
+        if isinstance(experiences_raw, list) and len(experiences_raw) > 0:
+            experiences = sorted(
+                experiences_raw,
+                key=lambda x: x.get('start_date', '') if isinstance(x, dict) else '',
+                reverse=True
+            )
+        else:
+            experiences = []
         
         # Sort education by start date (most recent first)
-        educations = sorted(
-            resume_data.get('educations', []),
-            key=lambda x: x.get('start_date', ''),
-            reverse=True
-        )
+        educations_raw = resume_data.get('educations') or []
+        if isinstance(educations_raw, list) and len(educations_raw) > 0:
+            educations = sorted(
+                educations_raw,
+                key=lambda x: x.get('start_date', '') if isinstance(x, dict) else '',
+                reverse=True
+            )
+        else:
+            educations = []
         
         # Group skills by category
         skills_by_category = {}
@@ -221,20 +257,71 @@ class PremiumResumePDFGenerator:
         
         summary_text = resume_data.get('optimized_summary') or resume_data.get('summary', '')
         
+        # Log data counts for debugging
+        logger.info(
+            f"Context data counts - "
+            f"experiences: {len(experiences)}, "
+            f"educations: {len(educations)}, "
+            f"skills: {len(resume_data.get('skills', []))}, "
+            f"projects: {len(resume_data.get('projects', []))}, "
+            f"certifications: {len(resume_data.get('certifications', []))}, "
+            f"languages: {len(resume_data.get('languages', []))}, "
+            f"interests: {len(resume_data.get('interests', []))}, "
+            f"full_name: '{full_name}', "
+            f"title: '{title}', "
+            f"summary_length: {len(summary_text)}"
+        )
+        
+        # CRITICAL: Ensure all lists are actual lists, never None
+        skills_list = resume_data.get('skills') or []
+        
+        # Fix project objects - add 'name' field from 'title' for template compatibility
+        projects_raw = resume_data.get('projects') or []
+        projects_list = []
+        for p in projects_raw:
+            project = dict(p) if isinstance(p, dict) else {}
+            project['name'] = project.get('title', project.get('name', ''))
+            projects_list.append(project)
+        
+        # Fix certification objects - add both 'name' and 'title' fields for template compatibility
+        certs_raw = resume_data.get('certifications') or []
+        certifications_list = []
+        for c in certs_raw:
+            cert = dict(c) if isinstance(c, dict) else {}
+            # Ensure both name and title exist
+            cert['name'] = cert.get('name') or cert.get('title', '')
+            cert['title'] = cert.get('title') or cert.get('name', '')
+            certifications_list.append(cert)
+        
+        languages_list = resume_data.get('languages') or []
+        interests_list = resume_data.get('interests') or []
+        
+        logger.error(f"=== CONTEXT PREPARATION ===")
+        logger.error(f"Experiences (sorted): {len(experiences)}")
+        logger.error(f"Projects: {len(projects_list)}")
+        logger.error(f"Skills: {len(skills_list)}")
+        logger.error(f"Educations: {len(educations)}")
+        logger.error(f"Certifications: {len(certifications_list)}")
+        logger.error(f"Languages: {len(languages_list)}")
+        logger.error(f"Full name: '{full_name}'")
+        logger.error(f"Title: '{title}'")
+        logger.error(f"Summary: '{summary_text[:100] if summary_text else 'EMPTY'}...'")
+        
         context = {
-            'resume': resume_data,
+            'resume': resume_data,  # Include full resume data for template access
             'full_name': full_name,
             'title': title,
+            'professional_tagline': resume_data.get('professional_tagline', ''),
             'summary': summary_text,
             'contact': contact_info,
-            'experiences': experiences,
-            'educations': educations,
-            'skills': resume_data.get('skills', []),
+            'experiences': experiences,  # Already a list
+            'educations': educations,  # Already a list
+            'skills': skills_list,  # Guaranteed to be a list
             'skills_by_category': skills_by_category,
-            'projects': resume_data.get('projects', []),
-            'certifications': resume_data.get('certifications', []),
-            'languages': resume_data.get('languages', []),
-            'interests': resume_data.get('interests', []),
+            'projects': projects_list,  # Guaranteed to be a list
+            'certifications': certifications_list,  # Guaranteed to be a list
+            'languages': languages_list,  # Guaranteed to be a list
+            'interests': interests_list,  # Guaranteed to be a list
             'template_name': template_name,
             'fonts': fonts,
             'ats_mode': ats_mode,
@@ -288,44 +375,51 @@ class PremiumResumePDFGenerator:
             return None
     
     def _generate_pdf_from_html(self, html_content: str, template_name: str) -> bytes:
-        """Generate PDF from HTML using WeasyPrint or fallback to reportlab."""
+        """Generate PDF from HTML using WeasyPrint - NO FALLBACK."""
         if not WEASYPRINT_AVAILABLE:
-            # Fallback to reportlab-based generator
-            logger.info("Using reportlab fallback for PDF generation")
-            return self._generate_pdf_with_reportlab(html_content, template_name)
+            raise ImportError(
+                "WeasyPrint is REQUIRED for styled PDF generation. "
+                "Install with: pip install weasyprint. "
+                "ReportLab fallback has been removed to prevent blank/styled PDFs."
+            )
+        
+        # Log first 1000 chars of HTML for debugging
+        html_preview = html_content[:1000] if len(html_content) > 1000 else html_content
+        logger.info(f"Generating PDF with WeasyPrint for template: {template_name}")
+        logger.info(f"HTML preview (first 1000 chars): {html_preview}")
+        logger.info(f"Full HTML length: {len(html_content)} chars")
         
         try:
             # Configure fonts
             font_config = FontConfiguration()
             
-            # Generate PDF
-            # Use static directory as base_url for resolving assets
-            base_url = str(self.static_dir.parent)  # Points to backend directory
+            # CRITICAL FIX: WeasyPrint needs base_url=None to resolve absolute URLs
+            # But we also need to ensure CSS is processed
+            # Try with None first (allows absolute URLs like https://fonts.googleapis.com)
+            html_doc = HTML(string=html_content, base_url=None)
             
-            html_doc = HTML(string=html_content, base_url=base_url)
+            logger.error(f"=== WEASYPRINT GENERATION ===")
+            logger.error(f"HTML doc created, length: {len(html_content)}")
             
-            # Try to load external CSS if available
-            css_path = self.static_dir / 'css' / 'resume.css'
-            stylesheets = []
+            # Generate PDF - WeasyPrint automatically processes inline <style> tags
+            pdf_bytes = html_doc.write_pdf(stylesheets=[], font_config=font_config)
             
-            if css_path.exists():
-                try:
-                    with open(css_path, 'r', encoding='utf-8') as f:
-                        css_content = f.read()
-                    css_doc = CSS(string=css_content, font_config=font_config)
-                    stylesheets.append(css_doc)
-                except Exception as e:
-                    logger.warning(f"Could not load CSS file: {e}")
+            logger.error(f"PDF bytes generated: {len(pdf_bytes)}")
             
-            # Generate PDF
-            pdf_bytes = html_doc.write_pdf(stylesheets=stylesheets, font_config=font_config)
+            logger.info(f"✓ Successfully generated PDF with WeasyPrint ({len(pdf_bytes)} bytes)")
+            if len(pdf_bytes) < 10000:
+                logger.warning(f"⚠ PDF is suspiciously small ({len(pdf_bytes)} bytes) - may be blank!")
             
             return pdf_bytes
         
         except Exception as e:
-            logger.error(f"Error generating PDF with WeasyPrint: {e}")
-            logger.info("Falling back to reportlab")
-            return self._generate_pdf_with_reportlab(html_content, template_name)
+            logger.error(f"✗ CRITICAL: WeasyPrint PDF generation failed: {e}")
+            logger.exception("Full traceback:")
+            # NO FALLBACK - fail hard so we know something is wrong
+            raise RuntimeError(
+                f"WeasyPrint PDF generation failed: {str(e)}. "
+                "This is a critical error - PDF exports are disabled until fixed."
+            ) from e
     
     def _generate_pdf_with_reportlab(self, html_content: str, template_name: str) -> bytes:
         """Fallback PDF generation using reportlab with styled templates."""

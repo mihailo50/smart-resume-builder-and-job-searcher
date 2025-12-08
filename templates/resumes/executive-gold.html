@@ -4,7 +4,21 @@
     <meta charset="UTF-8">
     <title>{{ full_name }} - Resume</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap');
+        /* CRITICAL: Use @font-face instead of @import for WeasyPrint compatibility */
+        @font-face {
+            font-family: 'Roboto Slab';
+            src: url('https://fonts.gstatic.com/s/robotoslab/v34/BngbUXZYTXPIvIBgJJSb6s3B35RRWQ.woff2') format('woff2');
+            font-weight: 300 800;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'Roboto';
+            src: url('https://fonts.gstatic.com/s/roboto/v32/KFOmCnqEu92Fr1Mu4mxP.woff2') format('woff2');
+            font-weight: 300 700;
+            font-style: normal;
+            font-display: swap;
+        }
         @page {
             size: A4;
             margin: 1.2cm;
@@ -17,12 +31,11 @@
         }
         
         body {
-            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Roboto', 'Arial', -apple-system, BlinkMacSystemFont, sans-serif;
             font-size: 9.5pt;
             line-height: 1.55;
             color: #1a1a1a;
             background: #ffffff;
-            overflow: hidden;
         }
         
         .resume-container {

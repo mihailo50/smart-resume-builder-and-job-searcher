@@ -3,6 +3,7 @@ Serializers for file processing endpoints.
 """
 from rest_framework import serializers
 from typing import Optional
+import re
 
 
 class ResumeUploadSerializer(serializers.Serializer):
@@ -18,6 +19,37 @@ class ResumeUploadResponseSerializer(serializers.Serializer):
     structured_data = serializers.DictField(help_text="Extracted structured data (if available)")
     file_url = serializers.URLField(help_text="URL of the uploaded file")
     metadata = serializers.DictField(help_text="File metadata")
+
+
+class PhotoURLField(serializers.CharField):
+    """Custom field that accepts both regular URLs and data URLs."""
+    
+    def __init__(self, **kwargs):
+        kwargs.setdefault('required', False)
+        kwargs.setdefault('allow_null', True)
+        kwargs.setdefault('allow_blank', True)
+        super().__init__(**kwargs)
+    
+    def to_internal_value(self, data):
+        if not data or data == '':
+            return None
+        
+        # Check if it's a data URL
+        if data.startswith('data:'):
+            # Validate data URL format: data:[<mediatype>][;base64],<data>
+            # More flexible pattern that accepts various data URL formats
+            data_url_pattern = r'^data:([^;]+)?(;[^,]+)?,.*$'
+            if re.match(data_url_pattern, data):
+                return data
+            else:
+                raise serializers.ValidationError("Invalid data URL format.")
+        
+        # Otherwise, validate as regular URL
+        try:
+            url_field = serializers.URLField()
+            return url_field.to_internal_value(data)
+        except serializers.ValidationError:
+            raise serializers.ValidationError("Enter a valid URL or data URL.")
 
 
 class ResumeExportRequestSerializer(serializers.Serializer):
@@ -47,10 +79,11 @@ class ResumeExportRequestSerializer(serializers.Serializer):
         required=False,
         help_text="Generate ATS-friendly version (no columns/graphics)"
     )
-    photo_url = serializers.URLField(
+    photo_url = PhotoURLField(
         required=False,
         allow_null=True,
-        help_text="URL to user's photo image (optional)"
+        allow_blank=True,
+        help_text="URL to user's photo image (supports HTTP/HTTPS URLs or data URLs like data:image/png;base64,...)"
     )
     template_id = serializers.UUIDField(
         required=False,

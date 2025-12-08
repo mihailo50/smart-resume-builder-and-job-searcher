@@ -54,13 +54,18 @@ class SupabaseJWTAuthentication(BaseAuthentication):
         Returns:
             Tuple of (user, token) or None if authentication fails
         """
-        # Get token from Authorization header
+        # Get token from Authorization header or query parameter (for downloads)
         auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+        token = None
         
-        if not auth_header.startswith('Bearer '):
+        if auth_header.startswith('Bearer '):
+            token = auth_header.split(' ')[1]
+        elif request.method == 'GET' and 'token' in request.query_params:
+            # Allow token in query params for file downloads
+            token = request.query_params.get('token')
+            
+        if not token:
             return None
-        
-        token = auth_header.split(' ')[1]
         
         try:
             # Validate token with Supabase
