@@ -22,3 +22,4 @@ COMMENT ON COLUMN resume_drafts.owner IS 'Supabase user_id - set when draft is c
 
 
 
+

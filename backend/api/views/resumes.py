@@ -1,12 +1,15 @@
 """
 Resume views for CRUD operations and premium PDF export.
 """
+import logging
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
 from config.services.resume_service import ResumeService
+
+logger = logging.getLogger(__name__)
 from api.serializers.resume import (
     ResumeSerializer,
     ResumeCreateSerializer,
@@ -26,6 +29,8 @@ from api.auth.utils import get_supabase_user_id
 from api.permissions import IsResumeOwner
 from config.files.exporter import ResumeExporter
 from config.files.storage import FileStorageService
+from config.services.resume_pdf_generator import PremiumResumePDFGenerator
+from django.template.loader import render_to_string
 
 
 class ResumeViewSet(viewsets.ViewSet):
@@ -472,26 +477,23 @@ class ResumeViewSet(viewsets.ViewSet):
         operation_id='export_resume',
         request=ResumeExportRequestSerializer,
         responses={200: ResumeExportResponseSerializer},
-        tags=['Resumes']
+        tags=['Resumes'],
+        parameters=[
+            dict(name='format', in_='query', description='pdf or docx', required=False, type=str),
+            dict(name='template', in_='query', description='Template ID', required=False, type=str),
+            dict(name='font', in_='query', description='Font combination', required=False, type=str),
+            dict(name='ats_mode', in_='query', description='ATS mode (true/false)', required=False, type=bool),
+        ]
     )
-    @action(detail=True, methods=['post'], url_path='export')
+    @action(detail=True, methods=['post', 'get'], url_path='export')
     def export(self, request, pk=None):
         """
         Export a resume to PDF or DOCX format with premium templates.
         
+        Supports both POST (JSON body) and GET (query params) for easy download links.
+        
+        GET /api/v1/resumes/{id}/export/?format=pdf&template=modern&font=inter&token={jwt}
         POST /api/v1/resumes/{id}/export/
-        
-        - Supports 8+ professional templates
-        - Beautiful typography and styling
-        - ATS-friendly mode available
-        
-        Request body:
-        {
-            "format": "pdf|docx",
-            "template": "modern-indigo|minimalist-black|creative-violet|executive-gold|tech-cyan|sidebar-teal|ats-classic|elegant-emerald",
-            "font": "modern|classic|creative",
-            "ats_mode": false
-        }
         """
         supabase_user_id = get_supabase_user_id(request)
         if not supabase_user_id:
@@ -500,7 +502,7 @@ class ResumeViewSet(viewsets.ViewSet):
                 status=status.HTTP_401_UNAUTHORIZED
             )
         
-        # Get resume
+        # Get resume with ALL related data
         service = ResumeService()
         resume = service.get_resume_with_details(pk)
         
@@ -517,14 +519,95 @@ class ResumeViewSet(viewsets.ViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Validate request
-        serializer = ResumeExportRequestSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        # Handle parameters based on request method
+        params = {}
+        if request.method == 'POST':
+            # Validate request body
+            serializer = ResumeExportRequestSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            params = serializer.validated_data
+        else:
+            # GET request - use query params
+            params = {
+                'format': request.query_params.get('format', 'pdf'),
+                'template': request.query_params.get('template'),
+                'font': request.query_params.get('font'),
+                'ats_mode': request.query_params.get('ats_mode', 'false').lower() == 'true',
+                'photo_url': request.query_params.get('photo_url')
+            }
         
-        export_format = serializer.validated_data.get('format', 'pdf')
-        template_name = serializer.validated_data.get('template') or resume.get('last_template') or 'modern-indigo'
-        font_combination = serializer.validated_data.get('font') or resume.get('last_font') or 'modern'
-        ats_mode = serializer.validated_data.get('ats_mode', False)
+        export_format = params.get('format', 'pdf')
+        template_name = params.get('template') or resume.get('last_template') or 'modern-indigo'
+        font_combination = params.get('font') or resume.get('last_font') or 'modern'
+        ats_mode = params.get('ats_mode', False)
+        photo_url = params.get('photo_url')
+        
+        # Log what we're getting from database
+        logger.info(
+            f"Exporting resume {pk} - "
+            f"experiences: {len(resume.get('experiences', []))}, "
+            f"projects: {len(resume.get('projects', []))}, "
+            f"skills: {len(resume.get('skills', []))}, "
+            f"educations: {len(resume.get('educations', []))}, "
+            f"certifications: {len(resume.get('certifications', []))}, "
+            f"languages: {len(resume.get('languages', []))}, "
+            f"title: '{resume.get('title', '')}', "
+            f"summary_length: {len(resume.get('summary', ''))}"
+        )
+        
+        # Extract personal_info if it's stored as a JSON field
+        personal_info = {}
+        if isinstance(resume.get('personal_info'), dict):
+            personal_info = resume.get('personal_info', {})
+        else:
+            # If personal_info is stored as separate fields, construct it
+            personal_info = {
+                'full_name': resume.get('full_name', ''),
+                'email': resume.get('email', ''),
+                'phone': resume.get('phone', ''),
+                'location': resume.get('location', ''),
+                'linkedin_url': resume.get('linkedin_url', ''),
+                'github_url': resume.get('github_url', ''),
+                'portfolio_url': resume.get('portfolio_url', ''),
+            }
+        
+        # Prepare COMPLETE resume data for PDF generation - NO DATA STRIPPING
+        resume_data = {
+            'id': str(resume.get('id', '')),
+            'full_name': personal_info.get('full_name') or resume.get('title', '') or resume.get('full_name', 'Your Name'),
+            'title': resume.get('title', ''),  # This is the name field in DB
+            'professional_tagline': resume.get('professional_tagline', ''),
+            'summary': resume.get('summary', ''),
+            'optimized_summary': resume.get('optimized_summary', ''),
+            'email': personal_info.get('email') or resume.get('email', ''),
+            'phone': personal_info.get('phone') or resume.get('phone', ''),
+            'location': personal_info.get('location') or resume.get('location', ''),
+            'linkedin_url': personal_info.get('linkedin_url') or resume.get('linkedin_url', ''),
+            'github_url': personal_info.get('github_url') or resume.get('github_url', ''),
+            'portfolio_url': personal_info.get('portfolio_url') or resume.get('portfolio_url', ''),
+            'personal_info': personal_info,
+            # Pass ALL data - ensure lists are never None
+            'experiences': resume.get('experiences') or [],
+            'educations': resume.get('educations') or [],
+            'skills': resume.get('skills') or [],
+            'projects': resume.get('projects') or [],
+            'certifications': resume.get('certifications') or [],
+            'languages': resume.get('languages') or [],
+            'interests': resume.get('interests') or [],
+        }
+        
+        # Log final data being sent to generator
+        logger.info(
+            f"Resume data prepared for PDF - "
+            f"full_name: '{resume_data['full_name']}', "
+            f"title: '{resume_data['title']}', "
+            f"professional_tagline: '{resume_data['professional_tagline']}', "
+            f"experiences: {len(resume_data['experiences'])}, "
+            f"projects: {len(resume_data['projects'])}, "
+            f"skills: {len(resume_data['skills'])}, "
+            f"educations: {len(resume_data['educations'])}, "
+            f"certifications: {len(resume_data['certifications'])}"
+        )
         
         try:
             # Export resume
@@ -532,10 +615,11 @@ class ResumeViewSet(viewsets.ViewSet):
             
             if export_format == 'pdf':
                 file_content = exporter.export_to_pdf(
-                    resume,
+                    resume_data,
                     template_name=template_name,
                     font_combination=font_combination,
-                    ats_mode=ats_mode
+                    ats_mode=ats_mode,
+                    photo_url=photo_url
                 )
                 content_type = 'application/pdf'
                 filename = f"resume_{pk}.pdf"
@@ -549,46 +633,16 @@ class ResumeViewSet(viewsets.ViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Upload to storage (local or Supabase)
-            storage_service = FileStorageService()
-            upload_result = storage_service.upload_export(
-                user_id=str(supabase_user_id),
-                resume_id=str(pk),
-                file_content=file_content,
-                format=export_format,
-                template_id=template_name if template_name else None
-            )
+            # Return file directly for download
+            from django.http import HttpResponse
             
-            file_url = upload_result.get('url', '')
+            response = HttpResponse(file_content, content_type=content_type)
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            response['Content-Length'] = len(file_content)
             
-            # Get signed URL for download (valid for 1 hour)
-            try:
-                signed_url = storage_service.get_signed_url(
-                    bucket=storage_service.BUCKET_EXPORTS,
-                    file_path=upload_result.get('path', ''),
-                    expires_in=3600  # 1 hour
-                )
-            except Exception as e:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.warning(f"Error creating signed URL: {e}")
-                signed_url = file_url
-            
-            # Calculate expiration time (1 hour from now)
-            from datetime import datetime, timedelta, timezone
-            expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
-            
-            response_serializer = ResumeExportResponseSerializer({
-                'file_url': file_url,
-                'download_url': signed_url,
-                'expires_at': expires_at
-            })
-            
-            return Response(response_serializer.data, status=status.HTTP_200_OK)
+            return response
         
         except ImportError as e:
-            import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Missing dependency for export: {e}")
             return Response(
                 {'error': f'Export functionality not available: {str(e)}'},
@@ -596,10 +650,138 @@ class ResumeViewSet(viewsets.ViewSet):
             )
         
         except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
             logger.exception("Error exporting resume")
             return Response(
                 {'error': f'Failed to export resume: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @extend_schema(
+        operation_id='debug_pdf_html',
+        tags=['Debug'],
+        description='Debug endpoint to get raw HTML being sent to WeasyPrint'
+    )
+    @action(detail=True, methods=['post'], url_path='debug/pdf-html')
+    def debug_pdf_html(self, request, pk=None):
+        """
+        Debug endpoint: Returns the raw HTML string being sent to WeasyPrint.
+        POST /api/v1/resumes/{id}/debug/pdf-html/
+        """
+        supabase_user_id = get_supabase_user_id(request)
+        if not supabase_user_id:
+            return Response(
+                {'error': 'User not authenticated'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        # Get resume with ALL related data
+        service = ResumeService()
+        resume = service.get_resume_with_details(pk)
+        
+        if not resume:
+            return Response(
+                {'error': 'Resume not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Check ownership
+        if str(resume.get('user_id')) != str(supabase_user_id):
+            return Response(
+                {'error': 'Permission denied'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get template from request or use default
+        template_name = request.data.get('template', resume.get('last_template', 'sidebar-teal'))
+        font_combination = request.data.get('font', resume.get('last_font', 'modern'))
+        ats_mode = request.data.get('ats_mode', False)
+        photo_url = request.data.get('photo_url')
+        
+        # Prepare resume data (same as export endpoint)
+        personal_info = {}
+        if isinstance(resume.get('personal_info'), dict):
+            personal_info = resume.get('personal_info', {})
+        else:
+            personal_info = {
+                'full_name': resume.get('full_name', ''),
+                'email': resume.get('email', ''),
+                'phone': resume.get('phone', ''),
+                'location': resume.get('location', ''),
+                'linkedin_url': resume.get('linkedin_url', ''),
+                'github_url': resume.get('github_url', ''),
+                'portfolio_url': resume.get('portfolio_url', ''),
+            }
+        
+        resume_data = {
+            'id': str(resume.get('id', '')),
+            'full_name': personal_info.get('full_name') or resume.get('title', '') or resume.get('full_name', 'Your Name'),
+            'title': resume.get('title', ''),
+            'professional_tagline': resume.get('professional_tagline', ''),
+            'summary': resume.get('summary', ''),
+            'optimized_summary': resume.get('optimized_summary', ''),
+            'email': personal_info.get('email') or resume.get('email', ''),
+            'phone': personal_info.get('phone') or resume.get('phone', ''),
+            'location': personal_info.get('location') or resume.get('location', ''),
+            'linkedin_url': personal_info.get('linkedin_url') or resume.get('linkedin_url', ''),
+            'github_url': personal_info.get('github_url') or resume.get('github_url', ''),
+            'portfolio_url': personal_info.get('portfolio_url') or resume.get('portfolio_url', ''),
+            'personal_info': personal_info,
+            'experiences': resume.get('experiences') or [],
+            'educations': resume.get('educations') or [],
+            'skills': resume.get('skills') or [],
+            'projects': resume.get('projects') or [],
+            'certifications': resume.get('certifications') or [],
+            'languages': resume.get('languages') or [],
+            'interests': resume.get('interests') or [],
+        }
+        
+        try:
+            # Generate HTML using the same method as PDF generation
+            generator = PremiumResumePDFGenerator()
+            fonts = generator.FONT_COMBINATIONS.get(font_combination, generator.FONT_COMBINATIONS['modern'])
+            context = generator._prepare_context(resume_data, template_name, fonts, ats_mode, None, photo_url)
+            
+            # Generate QR codes
+            linkedin_url = resume_data.get('linkedin_url') or resume_data.get('user_profile', {}).get('linkedin_url', '')
+            portfolio_url = resume_data.get('portfolio_url') or resume_data.get('user_profile', {}).get('portfolio_url', '')
+            if linkedin_url or portfolio_url:
+                qr_code_data = generator._generate_qr_code(linkedin_url or portfolio_url)
+                if qr_code_data:
+                    context['qr_code'] = qr_code_data
+            
+            resume_id = str(resume_data.get('id', ''))
+            portfolio_view_url = f"https://resumeai.pro/view/{resume_id}" if resume_id else (portfolio_url or linkedin_url)
+            if portfolio_view_url:
+                qr_code_footer_data = generator._generate_qr_code(portfolio_view_url)
+                if qr_code_footer_data:
+                    context['qr_code_footer'] = qr_code_footer_data
+                    context['portfolio_view_url'] = portfolio_view_url
+            
+            # Render HTML
+            template_path = f'resumes/{template_name}.html'
+            html_content = render_to_string(template_path, context)
+            
+            return Response({
+                'html': html_content,
+                'html_length': len(html_content),
+                'template': template_name,
+                'data_summary': {
+                    'full_name': resume_data['full_name'],
+                    'title': resume_data['title'],
+                    'professional_tagline': resume_data['professional_tagline'],
+                    'experiences_count': len(resume_data['experiences']),
+                    'projects_count': len(resume_data['projects']),
+                    'skills_count': len(resume_data['skills']),
+                    'educations_count': len(resume_data['educations']),
+                    'certifications_count': len(resume_data['certifications']),
+                    'languages_count': len(resume_data['languages']),
+                    'summary_length': len(resume_data.get('summary', '')),
+                }
+            }, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            logger.exception("Error generating debug HTML")
+            return Response(
+                {'error': f'Failed to generate HTML: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

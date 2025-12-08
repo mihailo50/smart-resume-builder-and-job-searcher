@@ -470,9 +470,9 @@ export function Navbar() {
           onSignupSuccess={(resumeId) => {
             setShowSaveModal(false);
             setIsAuthenticated(true);
-            toast.success('Resume saved! Redirecting to dashboard...');
+            toast.success('Resume saved! Preparing download...');
             setTimeout(() => {
-              router.push(`/builder/preview?id=${resumeId}`);
+              router.push(`/builder/preview?id=${resumeId}&openExport=true`);
             }, 1000);
           }}
           guestResumeId={hasGuestData ? getGuestResumeId() : undefined}

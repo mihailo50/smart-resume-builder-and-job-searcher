@@ -144,3 +144,4 @@ See `docs/SCORE_FORMULAS.md` for complete formulas table.
 - **Quantifiable**: `(bullets_with_numbers / total_bullets) * 100`
 
 
+

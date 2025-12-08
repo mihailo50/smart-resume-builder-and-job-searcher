@@ -127,7 +127,7 @@ export default function JobsPage() {
             
             try {
               const response = await api.get<LocationData>(
-                `v1/jobs/detect-location/`,
+                `/v1/jobs/detect-location/`,
                 {
                   params: {
                     latitude: latitude.toString(),
@@ -165,7 +165,7 @@ export default function JobsPage() {
 
   const detectLocationFromIP = async () => {
     try {
-      const response = await api.get<LocationData>('v1/jobs/detect-location/');
+      const response = await api.get<LocationData>('/v1/jobs/detect-location/');
       
       if (response.success && response.location_string) {
         setLocationData(response);

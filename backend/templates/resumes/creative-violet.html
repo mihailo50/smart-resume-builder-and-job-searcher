@@ -4,7 +4,23 @@
     <meta charset="UTF-8">
     <title>{{ full_name }} - Resume</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        /* CRITICAL: Use @font-face with multiple sources for WeasyPrint compatibility */
+        @font-face {
+            font-family: 'Space Grotesk';
+            src: url('https://fonts.gstatic.com/s/spacegrotesk/v16/V8mQoQDjQSkFtoMM3T6r8E7mPbF4Cw.woff2') format('woff2'),
+                 url('https://fonts.gstatic.com/s/spacegrotesk/v16/V8mQoQDjQSkFtoMM3T6r8E7mPbF4Cw.woff') format('woff');
+            font-weight: 300 700;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'Poppins';
+            src: url('https://fonts.gstatic.com/s/poppins/v21/pxiEyp8kv8JHgFVrJJfecg.woff2') format('woff2'),
+                 url('https://fonts.gstatic.com/s/poppins/v21/pxiEyp8kv8JHgFVrJJfecg.woff') format('woff');
+            font-weight: 300 800;
+            font-style: normal;
+            font-display: swap;
+        }
         @page {
             size: A4;
             margin: 1.2cm;
@@ -17,12 +33,11 @@
         }
         
         body {
-            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Poppins', 'Arial', -apple-system, BlinkMacSystemFont, sans-serif;
             font-size: 9.5pt;
             line-height: 1.55;
             color: #1a1a1a;
             background: #ffffff;
-            overflow: hidden;
         }
         
         .resume-container {
@@ -371,7 +386,7 @@
         {% endif %}
         
         <!-- Experience -->
-        {% if experiences %}
+        {% if experiences and experiences|length > 0 %}
         <section class="section">
             <h2 class="section-title">Work Experience</h2>
             {% for exp in experiences %}
