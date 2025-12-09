@@ -23,6 +23,7 @@ import {
   loadGuestResume, 
   getGuestResumeId 
 } from '@/lib/guest-resume';
+import { ResumeStepsSidebar } from '@/components/builder/steps-sidebar';
 
 interface Skill {
   id: string;
@@ -157,7 +158,7 @@ export default function SkillsPage() {
         await saveSkillsToAPI();
         
         toast.success('Skills saved');
-        router.push(`/builder/summary?id=${resumeId}`);
+        router.push(`/builder/languages?id=${resumeId}`);
       } else {
         // Guest flow - save to localStorage
         saveGuestResume({
@@ -174,7 +175,7 @@ export default function SkillsPage() {
         
         const currentGuestId = getGuestResumeId();
         toast.success('Skills saved');
-        router.push(`/builder/summary?guestId=${currentGuestId}`);
+        router.push(`/builder/languages?guestId=${currentGuestId}`);
         return;
       }
     } catch (error: any) {
@@ -198,7 +199,7 @@ export default function SkillsPage() {
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
         <Navbar />
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <div className="mb-8">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-muted-foreground">Step 6 of 11</span>
@@ -207,6 +208,20 @@ export default function SkillsPage() {
               <Progress value={progress} className="h-2" />
             </div>
 
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="lg:col-span-1"
+              >
+                <ResumeStepsSidebar currentStepId={6} resumeId={resumeId} guestId={guestId} />
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="lg:col-span-3"
+              >
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -343,6 +358,8 @@ export default function SkillsPage() {
                 </div>
               </CardContent>
             </Card>
+              </motion.div>
+            </div>
           </div>
         </div>
       </div>

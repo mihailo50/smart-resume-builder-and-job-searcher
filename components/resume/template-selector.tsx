@@ -41,7 +41,7 @@ export function TemplateSelector({
       <div>
         <Label className="text-base font-semibold mb-4 block">Choose Template</Label>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[500px] overflow-y-auto p-2">
-          {(showAllTemplates ? TEMPLATES : TEMPLATES.slice(0, 4)).map((template) => (
+          {(showAllTemplates ? TEMPLATES : TEMPLATES.slice(0, 6)).map((template) => (
             <Card
               key={template.id}
               className={`cursor-pointer transition-all hover:border-primary ${
@@ -50,12 +50,12 @@ export function TemplateSelector({
               onClick={() => onTemplateChange(template.id)}
             >
               <CardHeader className="p-3">
-                <div className="aspect-[3/4] bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg mb-2 relative overflow-hidden border min-h-[180px]">
+                <div className="aspect-[3/4] bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg mb-2 relative overflow-hidden border min-h-[220px]">
                   <Image
                     src={template.thumbnail}
                     alt={template.name}
                     fill
-                    className="object-contain p-1"
+                    className="object-cover p-0 scale-[1.02]"
                     onError={(e) => {
                       const target = e.currentTarget as HTMLImageElement;
                       target.style.display = 'none';
@@ -85,7 +85,7 @@ export function TemplateSelector({
             </Card>
           ))}
         </div>
-        {!showAllTemplates && TEMPLATES.length > 4 && (
+        {!showAllTemplates && TEMPLATES.length > 6 && (
           <Button
             variant="outline"
             size="sm"
