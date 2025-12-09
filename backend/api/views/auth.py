@@ -122,7 +122,11 @@ class AuthViewSet(viewsets.ViewSet):
                 
         except Exception as e:
             return Response(
-                {'error': str(e)},
+                {
+                    'error': 'Email already registered. Please sign in instead.'
+                    if 'already registered' in str(e).lower()
+                    else str(e)
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
     

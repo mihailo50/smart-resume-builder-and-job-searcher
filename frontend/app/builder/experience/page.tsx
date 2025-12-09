@@ -24,6 +24,7 @@ import {
   getGuestResumeId 
 } from '@/lib/guest-resume';
 import { useManualDirtyGuard, useBeforeUnloadGuard, clearDirtyState } from '@/lib/use-dirty-guard';
+import { ResumeStepsSidebar } from '@/components/builder/steps-sidebar';
 
 interface Experience {
   id: string;
@@ -248,20 +249,6 @@ export default function ExperiencePage() {
     }
   };
 
-  const steps = [
-    { id: 1, name: 'Personal Info', href: '/builder/personal', current: false },
-    { id: 2, name: 'Experience', href: '/builder/experience', current: true },
-    { id: 3, name: 'Projects', href: '/builder/projects', current: false },
-    { id: 4, name: 'Education', href: '/builder/education', current: false },
-    { id: 5, name: 'Certifications', href: '/builder/certifications', current: false },
-    { id: 6, name: 'Skills', href: '/builder/skills', current: false },
-    { id: 7, name: 'Languages', href: '/builder/languages', current: false },
-    { id: 8, name: 'Interests', href: '/builder/interests', current: false },
-    { id: 9, name: 'Summary', href: '/builder/summary', current: false },
-    { id: 10, name: 'AI Optimize', href: '/builder/optimize', current: false },
-    { id: 11, name: 'Preview', href: '/builder/preview', current: false },
-  ];
-
   return (
     <PageTransition>
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
@@ -286,28 +273,7 @@ export default function ExperiencePage() {
                 animate={{ opacity: 1, x: 0 }}
                 className="lg:col-span-1"
               >
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Resume Builder</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {steps.map((step, index) => (
-                      <div
-                        key={step.id}
-                        className={`flex items-center gap-2 p-2 rounded-md transition-colors ${
-                          step.current
-                            ? 'bg-primary/10 text-primary font-semibold'
-                            : 'text-muted-foreground hover:bg-accent'
-                        }`}
-                      >
-                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
-                          {step.id}
-                        </div>
-                        <span className="text-sm">{step.name}</span>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
+                <ResumeStepsSidebar currentStepId={2} resumeId={resumeId} guestId={guestId} />
               </motion.div>
 
               {/* Form */}

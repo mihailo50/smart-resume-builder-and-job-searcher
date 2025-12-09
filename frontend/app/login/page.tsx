@@ -13,6 +13,7 @@ import { Github, Mail, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabaseClient';
 
 interface LoginResponse {
   access_token: string;
@@ -31,6 +32,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +68,30 @@ export default function LoginPage() {
       toast.error(error?.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOAuth = async (provider: 'google' | 'github') => {
+    try {
+      setOauthLoading(provider);
+      const redirectTo = typeof window !== 'undefined'
+        ? `${window.location.origin}/auth/callback`
+        : undefined;
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+    } catch (error: any) {
+      console.error(`${provider} login failed:`, error);
+      toast.error(error?.message || 'Login failed. Please try again.');
+      setOauthLoading(null);
     }
   };
 
@@ -151,12 +177,30 @@ export default function LoginPage() {
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <Button variant="outline" className="w-full">
-                      <Github className="mr-2 h-4 w-4" />
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      disabled={oauthLoading !== null}
+                      onClick={() => handleOAuth('github')}
+                    >
+                      {oauthLoading === 'github' ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Github className="mr-2 h-4 w-4" />
+                      )}
                       GitHub
                     </Button>
-                    <Button variant="outline" className="w-full">
-                      <Mail className="mr-2 h-4 w-4" />
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      disabled={oauthLoading !== null}
+                      onClick={() => handleOAuth('google')}
+                    >
+                      {oauthLoading === 'google' ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Mail className="mr-2 h-4 w-4" />
+                      )}
                       Google
                     </Button>
                   </div>

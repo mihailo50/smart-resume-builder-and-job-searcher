@@ -24,6 +24,7 @@ import {
   getGuestResumeId 
 } from '@/lib/guest-resume';
 import { clearDirtyState } from '@/lib/use-dirty-guard';
+import { ResumeStepsSidebar } from '@/components/builder/steps-sidebar';
 
 interface Education {
   id: string;
@@ -242,6 +243,20 @@ export default function EducationPage() {
               <Progress value={progress} className="h-2" />
             </div>
 
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="lg:col-span-1"
+              >
+                <ResumeStepsSidebar currentStepId={4} resumeId={resumeId} guestId={guestId} />
+              </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="lg:col-span-3"
+            >
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -418,6 +433,8 @@ export default function EducationPage() {
                 </div>
               </CardContent>
             </Card>
+            </motion.div>
+            </div>
           </div>
         </div>
       </div>
