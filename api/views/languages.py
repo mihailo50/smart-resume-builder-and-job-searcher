@@ -58,7 +58,19 @@ class LanguageViewSet(viewsets.ViewSet):
             )
         
         service = LanguageService()
-        languages = service.get_by_resume_id(resume_id)
+        try:
+            languages = service.get_by_resume_id(resume_id)
+        except Exception as e:
+            # Handle missing Supabase table gracefully
+            if 'PGRST205' in str(e) or 'Could not find the table' in str(e):
+                return Response(
+                    {
+                        'error': 'Languages table is missing in Supabase. Please run the migration to create it.',
+                        'code': 'missing_languages_table'
+                    },
+                    status=status.HTTP_501_NOT_IMPLEMENTED
+                )
+            raise
         
         serializer = LanguageSerializer(languages, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
