@@ -180,13 +180,24 @@ class ApiClient {
     let errorMessage = `Request failed with status ${response.status}`;
     
     try {
-      const errorData: ApiError = await response.json();
-      errorMessage = errorData.detail || errorData.message || errorMessage;
+      const text = await response.text();
+      if (text) {
+        try {
+          const errorData = JSON.parse(text);
+          errorMessage = errorData.detail || errorData.message || errorData.error || errorMessage;
+        } catch {
+          // Not JSON, use text directly if it's short
+          if (text.length < 500) {
+            errorMessage = text;
+          }
+        }
+      }
     } catch {
-      // If response is not JSON, use status text
+      // If reading response fails, use status text
       errorMessage = response.statusText || errorMessage;
     }
     
+    console.error(`[API Error] Status ${response.status}: ${errorMessage}`);
     return new Error(errorMessage);
   }
 

@@ -65,6 +65,15 @@ interface ResumeData {
     issuer?: string;
     issue_date?: string;
   }>;
+  languages?: Array<{
+    id: string;
+    name: string;
+    proficiency?: string;
+  }>;
+  interests?: Array<{
+    id: string;
+    name: string;
+  }>;
 }
 
 export default function PreviewPage() {
@@ -455,6 +464,41 @@ export default function PreviewPage() {
                                   </span>
                                 )}
                               </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Languages */}
+                      {resume.languages && resume.languages.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3">Languages</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {resume.languages.map((lang) => (
+                              <span
+                                key={lang.id}
+                                className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm"
+                              >
+                                {lang.name}
+                                {lang.proficiency && <span className="ml-1 text-xs opacity-70">({lang.proficiency})</span>}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Interests */}
+                      {resume.interests && resume.interests.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3">Interests</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {resume.interests.map((interest) => (
+                              <span
+                                key={interest.id}
+                                className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm"
+                              >
+                                {interest.name}
+                              </span>
                             ))}
                           </div>
                         </div>
