@@ -212,9 +212,28 @@ class ResumeExporter:
                     para = doc.add_paragraph()
                     para.add_run(f"{category}: ").bold = True
                     para.add_run(', '.join(skill_names))
-                
+
                 doc.add_paragraph()
-            
+
+            # Languages
+            if resume_data.get('languages'):
+                doc.add_heading('Languages', level=2)
+                for lang in resume_data['languages']:
+                    para = doc.add_paragraph()
+                    para.add_run(lang.get('name', ''))
+                    if lang.get('proficiency'):
+                        para.add_run(f" ({lang['proficiency']})")
+                doc.add_paragraph()
+
+            # Interests
+            if resume_data.get('interests'):
+                doc.add_heading('Interests', level=2)
+                interests_list = [interest.get('name', '') for interest in resume_data['interests']]
+                if interests_list:
+                    para = doc.add_paragraph()
+                    para.add_run(', '.join(interests_list))
+                doc.add_paragraph()
+
             # Save to bytes
             buffer = io.BytesIO()
             doc.save(buffer)

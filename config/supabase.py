@@ -2,8 +2,13 @@
 Supabase client initialization and configuration.
 """
 import os
+import sys
 from supabase import create_client, Client
 from django.conf import settings
+
+# Fix for Windows HTTP/2 socket issues - disable HTTP/2 on Windows
+if sys.platform == 'win32':
+    os.environ.setdefault('HTTPX_HTTP2', 'false')
 
 
 def get_supabase_client() -> Client:

@@ -1,11 +1,34 @@
 """
 Base service class for Supabase operations.
 """
+import time
+import logging
 from datetime import date, datetime
 from typing import Dict, List, Optional, Any
 from uuid import UUID
 from supabase import Client
 from config.supabase import supabase
+
+logger = logging.getLogger(__name__)
+
+
+def execute_with_retry(query, max_retries: int = 3, delay: float = 0.5):
+    """Execute a Supabase query with retry logic for Windows socket issues."""
+    last_exception = None
+    for attempt in range(max_retries):
+        try:
+            return query.execute()
+        except Exception as e:
+            last_exception = e
+            error_str = str(e).lower()
+            # Retry on Windows socket errors or connection issues
+            if 'winerror 10035' in error_str or 'socket' in error_str or 'connection' in error_str:
+                if attempt < max_retries - 1:
+                    logger.warning(f"Retry {attempt + 1}/{max_retries} after socket error: {e}")
+                    time.sleep(delay * (attempt + 1))  # Exponential backoff
+                    continue
+            raise
+    raise last_exception
 
 
 class BaseSupabaseService:
@@ -52,7 +75,8 @@ class BaseSupabaseService:
             Dict: Created record
         """
         prepared_data = self._prepare_data(data)
-        response = self.client.table(self.table_name).insert(prepared_data).execute()
+        query = self.client.table(self.table_name).insert(prepared_data)
+        response = execute_with_retry(query)
         if response.data:
             return response.data[0]
         return {}
@@ -67,7 +91,8 @@ class BaseSupabaseService:
         Returns:
             Dict: Record data or None if not found
         """
-        response = self.client.table(self.table_name).select('*').eq('id', record_id).execute()
+        query = self.client.table(self.table_name).select('*').eq('id', record_id)
+        response = execute_with_retry(query)
         if response.data:
             return response.data[0]
         return None
@@ -130,7 +155,7 @@ class BaseSupabaseService:
         if offset:
             query = query.offset(offset)
         
-        response = query.execute()
+        response = execute_with_retry(query)
         return response.data or []
     
     def update(self, record_id: Any, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -145,7 +170,8 @@ class BaseSupabaseService:
             Dict: Updated record or None if not found
         """
         prepared_data = self._prepare_data(data)
-        response = self.client.table(self.table_name).update(prepared_data).eq('id', record_id).execute()
+        query = self.client.table(self.table_name).update(prepared_data).eq('id', record_id)
+        response = execute_with_retry(query)
         if response.data:
             return response.data[0]
         return None
@@ -160,7 +186,8 @@ class BaseSupabaseService:
         Returns:
             bool: True if deleted, False otherwise
         """
-        response = self.client.table(self.table_name).delete().eq('id', record_id).execute()
+        query = self.client.table(self.table_name).delete().eq('id', record_id)
+        response = execute_with_retry(query)
         return response.data is not None
     
     def search(
