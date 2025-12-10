@@ -186,7 +186,7 @@ export default function LoginPage() {
                       {oauthLoading === 'github' ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       ) : (
-                        <Github className="mr-2 h-4 w-4" />
+                      <Github className="mr-2 h-4 w-4" />
                       )}
                       GitHub
                     </Button>
@@ -199,7 +199,7 @@ export default function LoginPage() {
                       {oauthLoading === 'google' ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       ) : (
-                        <Mail className="mr-2 h-4 w-4" />
+                      <Mail className="mr-2 h-4 w-4" />
                       )}
                       Google
                     </Button>

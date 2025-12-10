@@ -427,6 +427,30 @@
             {% endfor %}
         </section>
         {% endif %}
+
+        <!-- Languages -->
+        {% if languages %}
+        <section class="section">
+            <h2 class="section-title">Languages</h2>
+            <div class="skills-list">
+                {% for lang in languages %}
+                <span class="skill-item">{{ lang.name }}{% if lang.proficiency %} ({{ lang.proficiency }}){% endif %}</span>{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Interests -->
+        {% if interests %}
+        <section class="section">
+            <h2 class="section-title">Interests</h2>
+            <div class="skills-list">
+                {% for interest in interests %}
+                <span class="skill-item">{{ interest.name }}</span>{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
         
         <!-- Skills - ATS Friendly Format -->
         {% if skills %}

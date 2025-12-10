@@ -497,7 +497,31 @@
             {% endfor %}
         </section>
         {% endif %}
-        
+
+        <!-- Languages -->
+        {% if languages %}
+        <section class="section">
+            <h2 class="section-title">Languages</h2>
+            <div class="skills-grid">
+                {% for lang in languages %}
+                <span class="skill-tag">{{ lang.name }}{% if lang.proficiency %} ({{ lang.proficiency }}){% endif %}</span>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Interests -->
+        {% if interests %}
+        <section class="section">
+            <h2 class="section-title">Interests</h2>
+            <div class="skills-grid">
+                {% for interest in interests %}
+                <span class="skill-tag">{{ interest.name }}</span>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
         <!-- Footer QR Code (Bottom-left) -->
         {% if qr_code_footer %}
         <div class="qr-code-footer">

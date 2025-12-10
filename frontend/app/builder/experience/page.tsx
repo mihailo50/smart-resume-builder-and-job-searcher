@@ -249,6 +249,20 @@ export default function ExperiencePage() {
     }
   };
 
+  const steps = [
+    { id: 1, name: 'Personal Info', href: '/builder/personal', current: false },
+    { id: 2, name: 'Experience', href: '/builder/experience', current: true },
+    { id: 3, name: 'Projects', href: '/builder/projects', current: false },
+    { id: 4, name: 'Education', href: '/builder/education', current: false },
+    { id: 5, name: 'Certifications', href: '/builder/certifications', current: false },
+    { id: 6, name: 'Skills', href: '/builder/skills', current: false },
+    { id: 7, name: 'Languages', href: '/builder/languages', current: false },
+    { id: 8, name: 'Interests', href: '/builder/interests', current: false },
+    { id: 9, name: 'Summary', href: '/builder/summary', current: false },
+    { id: 10, name: 'AI Optimize', href: '/builder/optimize', current: false },
+    { id: 11, name: 'Preview', href: '/builder/preview', current: false },
+  ];
+
   return (
     <PageTransition>
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">

@@ -3,6 +3,11 @@
 import os
 import sys
 
+# Fix for Windows HTTP/2 socket issues - must be set before httpx is imported
+if sys.platform == 'win32':
+    os.environ['HTTPX_HTTP2'] = '0'
+    os.environ['HTTPCORE_HTTP2'] = '0'
+
 
 def main():
     """Run administrative tasks."""
