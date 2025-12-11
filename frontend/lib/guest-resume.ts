@@ -17,6 +17,7 @@ export interface GuestResumeData {
     professionalTagline?: string;
   };
   experiences?: Array<{
+    id?: string;
     title?: string;
     company?: string;
     location?: string;
@@ -27,8 +28,11 @@ export interface GuestResumeData {
     order?: number;
   }>;
   educations?: Array<{
+    id?: string;
     degree?: string;
     school?: string;
+    institution?: string;
+    fieldOfStudy?: string;
     location?: string;
     startDate?: string;
     endDate?: string;
@@ -37,31 +41,41 @@ export interface GuestResumeData {
     order?: number;
   }>;
   skills?: Array<{
+    id?: string;
     name?: string;
     level?: string;
     order?: number;
   }>;
   projects?: Array<{
+    id?: string;
     title?: string;
+    name?: string;
     description?: string;
     technologies?: string;
+    url?: string;
     startDate?: string;
     endDate?: string;
     order?: number;
   }>;
   certifications?: Array<{
+    id?: string;
     name?: string;
+    title?: string;
     issuer?: string;
     issueDate?: string;
     expiryDate?: string;
+    credentialId?: string;
+    url?: string;
     order?: number;
   }>;
   languages?: Array<{
+    id?: string;
     name?: string;
     proficiency?: string;
     order?: number;
   }>;
   interests?: Array<{
+    id?: string;
     name?: string;
     order?: number;
   }>;
