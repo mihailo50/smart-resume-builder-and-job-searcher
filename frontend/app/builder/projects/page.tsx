@@ -81,7 +81,7 @@ export default function ProjectsPage() {
     
     try {
       setLoading(true);
-      const data = await api.get(`/v1/resumes/${resumeId}/projects/`);
+      const data = await api.get<any[]>(`/v1/resumes/${resumeId}/projects/`);
       const loadedProjects = data.map((proj: any) => ({
         id: proj.id,
         title: proj.title || '',

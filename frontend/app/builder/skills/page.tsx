@@ -63,7 +63,7 @@ export default function SkillsPage() {
     
     try {
       setLoading(true);
-      const data = await api.get(`/v1/resumes/${resumeId}/skills/`);
+      const data = await api.get<any[]>(`/v1/resumes/${resumeId}/skills/`);
       setSkills(
         data.map((skill: any) => ({
           id: skill.id,

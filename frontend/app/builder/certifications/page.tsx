@@ -85,7 +85,7 @@ export default function CertificationsPage() {
     
     try {
       setLoading(true);
-      const data = await api.get(`/v1/resumes/${resumeId}/certifications/`);
+      const data = await api.get<any[]>(`/v1/resumes/${resumeId}/certifications/`);
       const loadedCertifications = data.map((cert: any) => ({
         id: cert.id,
         title: cert.title || cert.name || '',
