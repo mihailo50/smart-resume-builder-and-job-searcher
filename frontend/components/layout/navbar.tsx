@@ -181,7 +181,7 @@ export function Navbar() {
 
   const loadUserInfo = async () => {
     try {
-      const response = await api.get('/v1/auth/me/');
+      const response = await api.get<any>('/v1/auth/me/');
       if (response.user) {
         setUser(response.user);
         localStorage.setItem('user', JSON.stringify(response.user));

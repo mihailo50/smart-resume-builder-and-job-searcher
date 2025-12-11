@@ -146,7 +146,7 @@ export default function LanguagesPage() {
     if (!resumeId) return;
     
     // Get existing languages from backend
-    const existingLanguages = await api.get(`/v1/resumes/${resumeId}/languages/`);
+    const existingLanguages = await api.get<any[]>(`/v1/resumes/${resumeId}/languages/`);
     const existingIds = new Set(existingLanguages.map((lang: any) => lang.id));
 
     // Save/update each language

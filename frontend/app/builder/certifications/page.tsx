@@ -171,7 +171,7 @@ export default function CertificationsPage() {
     if (!resumeId) return;
     
     // Get existing certifications from backend
-    const existingCertifications = await api.get(`/v1/resumes/${resumeId}/certifications/`);
+    const existingCertifications = await api.get<any[]>(`/v1/resumes/${resumeId}/certifications/`);
     const existingIds = new Set(existingCertifications.map((cert: any) => cert.id));
 
     // Save/update each certification

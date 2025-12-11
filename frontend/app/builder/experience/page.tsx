@@ -158,7 +158,7 @@ export default function ExperiencePage() {
     if (!resumeId) return;
     
     // Get existing experiences from backend
-    const existingExperiences = await api.get(`/v1/resumes/${resumeId}/experiences/`);
+    const existingExperiences = await api.get<any[]>(`/v1/resumes/${resumeId}/experiences/`);
     const existingIds = new Set(existingExperiences.map((exp: any) => exp.id));
 
     // Save/update each experience

@@ -100,7 +100,7 @@ export default function PersonalInfoPage() {
       console.log('[PERSONAL PAGE] Loading resume data for ID:', resumeId);
       
       // Get resume with details
-      const resume = await api.get(`/v1/resumes/${resumeId}/`);
+      const resume = await api.get<any>(`/v1/resumes/${resumeId}/`);
       console.log('[PERSONAL PAGE] Resume data received:', resume);
       
       // Personal info (email, phone, etc.) might be in user_profiles
@@ -118,7 +118,7 @@ export default function PersonalInfoPage() {
       
       // Try to load user info from auth endpoint
       try {
-        const userInfo = await api.get('/v1/auth/me/');
+        const userInfo = await api.get<any>('/v1/auth/me/');
         console.log('[PERSONAL PAGE] User info received:', userInfo);
         if (userInfo?.user) {
           const profile = userInfo.user.profile || {};
