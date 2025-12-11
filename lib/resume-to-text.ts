@@ -117,3 +117,5 @@ export function hasResumeContent(resume: GuestResumeData): boolean {
 }
 
 
+
+
