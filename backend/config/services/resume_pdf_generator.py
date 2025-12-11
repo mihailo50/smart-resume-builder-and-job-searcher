@@ -213,10 +213,10 @@ class PremiumResumePDFGenerator:
             'portfolio': resume_data.get('portfolio_url') or user_profile.get('portfolio_url', ''),
         }
         
-        # Professional title/tagline
+        # Professional title/tagline - DO NOT use resume_data.get('title') as fallback
+        # because 'title' field in DB stores the person's full name, not their job title
         title = (
             resume_data.get('professional_tagline') or 
-            resume_data.get('title') or 
             resume_data.get('position_title', '')
         )
         
