@@ -76,7 +76,7 @@ export default function InterestsPage() {
     
     try {
       setLoading(true);
-      const data = await api.get(`/v1/resumes/${resumeId}/interests/`);
+      const data = await api.get<any[]>(`/v1/resumes/${resumeId}/interests/`);
       const loadedInterests = data.map((int: any) => ({
         id: int.id,
         name: int.name || '',

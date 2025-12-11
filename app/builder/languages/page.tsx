@@ -88,7 +88,7 @@ export default function LanguagesPage() {
     
     try {
       setLoading(true);
-      const data = await api.get(`/v1/resumes/${resumeId}/languages/`);
+      const data = await api.get<any[]>(`/v1/resumes/${resumeId}/languages/`);
       const loadedLanguages = data.map((lang: any) => ({
         id: lang.id,
         name: lang.name || '',

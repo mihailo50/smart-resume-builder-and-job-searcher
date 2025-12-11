@@ -68,7 +68,7 @@ export default function EducationPage() {
     
     try {
       setLoading(true);
-      const data = await api.get(`/v1/resumes/${resumeId}/educations/`);
+      const data = await api.get<any[]>(`/v1/resumes/${resumeId}/educations/`);
       setEducations(
         data.map((edu: any) => ({
           id: edu.id,

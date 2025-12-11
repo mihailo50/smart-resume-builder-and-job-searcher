@@ -85,7 +85,7 @@ export default function ExperiencePage() {
     
     try {
       setLoading(true);
-      const data = await api.get(`/v1/resumes/${resumeId}/experiences/`);
+      const data = await api.get<any[]>(`/v1/resumes/${resumeId}/experiences/`);
       const loadedExperiences = data.map((exp: any) => ({
         id: exp.id,
         company: exp.company || '',
