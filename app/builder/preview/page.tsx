@@ -620,7 +620,7 @@ export default function PreviewPage() {
                     className="text-center mt-4 p-4 bg-muted/30 rounded-lg border border-border/50 max-w-md mx-auto"
                   >
                     <p className="text-sm text-muted-foreground mb-3">
-                      Download didn't start automatically?
+                      Download didn&apos;t start automatically?
                     </p>
                     <Button 
                       variant="default"
