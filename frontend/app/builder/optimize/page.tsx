@@ -628,7 +628,7 @@ export default function OptimizePage() {
                   Get instant ATS score improvements with AI-powered suggestions
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Optimize your resume for specific job postings with targeted keyword analysis. This step is optional if you're importing an existing resume.
+                  Optimize your resume for specific job postings with targeted keyword analysis. This step is optional if you&apos;re importing an existing resume.
                 </p>
               </div>
             </motion.div>
@@ -722,7 +722,7 @@ export default function OptimizePage() {
                             )}
                           </Button>
                           <p className="text-sm text-muted-foreground text-center">
-                            We'll convert your structured resume sections into text and analyze them for ATS optimization.
+                            We&apos;ll convert your structured resume sections into text and analyze them for ATS optimization.
                           </p>
                         </div>
                       ) : (

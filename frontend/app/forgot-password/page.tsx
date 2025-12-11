@@ -70,7 +70,7 @@ export default function ForgotPasswordPage() {
                         <Mail className="h-8 w-8 text-primary" />
                       </div>
                       <p className="text-muted-foreground">
-                        We've sent password reset instructions to <strong>{email}</strong>
+                        We&apos;ve sent password reset instructions to <strong>{email}</strong>
                       </p>
                       <Button variant="outline" onClick={() => router.push('/login')} className="w-full">
                         <ArrowLeft className="mr-2 h-4 w-4" />

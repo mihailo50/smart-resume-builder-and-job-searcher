@@ -924,7 +924,7 @@ export function SignupModal({ open, onOpenChange, onSignupSuccess, guestResumeId
             </form>
 
             <div className="text-center text-sm text-muted-foreground mt-4">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <button
                 type="button"
                 onClick={() => setActiveTab('signup')}
@@ -944,7 +944,7 @@ export function SignupModal({ open, onOpenChange, onSignupSuccess, guestResumeId
             disabled={signingUp || loggingIn || finalizing}
           >
             Continue as guest
-            <span className="text-xs text-muted-foreground ml-2">(can't download)</span>
+            <span className="text-xs text-muted-foreground ml-2">(can&apos;t download)</span>
           </Button>
         </div>
       </DialogContent>
