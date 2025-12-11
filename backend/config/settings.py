@@ -40,13 +40,45 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-d7=g7u&ef_iei@k=_xivgk!u32_aigq*uoqa7n$4-f^(l690^!')
+# Detect if running in production (Render sets RENDER=true)
+# Note: We DON'T use DATABASE_URL for detection since local dev can use remote Supabase
+IS_RENDER = os.getenv('RENDER') == 'true' or os.getenv('RENDER_EXTERNAL_URL') is not None
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Check both DEBUG and DJANGO_DEBUG for flexibility
+# Default: True for local development, False only on Render
+_debug_env = os.getenv('DEBUG') or os.getenv('DJANGO_DEBUG')
+if _debug_env is not None:
+    DEBUG = _debug_env.lower() in ('true', '1', 'yes')
+else:
+    # No explicit setting: default to True unless on Render
+    DEBUG = not IS_RENDER
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else []
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    if DEBUG:
+        # Development: use insecure key (safe because DEBUG=True means local only)
+        SECRET_KEY = 'django-insecure-dev-only-key-do-not-use-in-production'
+    else:
+        # Production: require secure key
+        raise ValueError("DJANGO_SECRET_KEY environment variable is required in production")
+
+# Allowed hosts configuration
+# Check both ALLOWED_HOSTS and DJANGO_ALLOWED_HOSTS for flexibility
+_allowed_hosts_env = os.getenv('ALLOWED_HOSTS') or os.getenv('DJANGO_ALLOWED_HOSTS')
+if _allowed_hosts_env:
+    ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(',') if h.strip()]
+elif DEBUG:
+    # Development default
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+else:
+    ALLOWED_HOSTS = []
+
+# Add Render's automatic hostname if available (production)
+RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 
 # Application definition

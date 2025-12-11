@@ -115,3 +115,5 @@ export function hasResumeContent(resume: GuestResumeData): boolean {
   // At minimum, need personal info and one of the main sections
   return !!(hasPersonal && (hasExperience || hasEducation || hasSkills));
 }
+
+

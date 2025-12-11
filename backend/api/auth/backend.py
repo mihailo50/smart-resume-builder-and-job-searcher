@@ -72,6 +72,8 @@ class SupabaseJWTAuthentication(BaseAuthentication):
             payload = self._validate_token(token)
             
             if not payload:
+                # Invalid token - return None to allow anonymous access
+                # Permission classes will decide if anonymous is allowed
                 return None
             
             # Get or create user
@@ -80,8 +82,17 @@ class SupabaseJWTAuthentication(BaseAuthentication):
             
             return (user, token)
             
+        except AuthenticationFailed:
+            # For endpoints with AllowAny, we should return None to allow anonymous access
+            # For endpoints requiring auth, the permission class will deny access
+            # This prevents 401 errors on public endpoints when tokens are expired
+            return None
         except Exception as e:
-            raise AuthenticationFailed(f'Invalid token: {str(e)}')
+            # Log the error but don't raise - allow permission classes to handle
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f'Token validation failed: {str(e)}')
+            return None
     
     def _validate_token(self, token: str) -> Optional[dict]:
         """
@@ -97,24 +108,20 @@ class SupabaseJWTAuthentication(BaseAuthentication):
             # Verify token with Supabase
             supabase: Client = get_supabase_client()
             
-            # Supabase client can verify tokens
-            # For now, we'll decode and verify manually
-            # In production, you might want to use Supabase's token verification
-            decoded = jwt.decode(
-                token,
-                options={"verify_signature": False}  # Supabase handles signature verification
-            )
+            # Verify token with Supabase's auth.get_user() which validates the token
+            # This is the recommended way to verify Supabase JWT tokens
+            user_response = supabase.auth.get_user(token)
             
-            # Verify with Supabase
-            try:
-                # Use Supabase's auth.get_user() to verify token
-                user_response = supabase.auth.get_user(token)
-                if user_response.user:
-                    return decoded
-            except Exception:
-                # Fallback: decode token if Supabase verification fails
-                # In production, always verify with Supabase
+            if user_response and user_response.user:
+                # Token is valid, decode it to get the payload
+                # We can safely decode without signature verification since Supabase validated it
+                decoded = jwt.decode(
+                    token,
+                    options={"verify_signature": False}  # Already verified by Supabase above
+                )
                 return decoded
+            else:
+                raise AuthenticationFailed('Invalid token: user not found')
                 
         except jwt.ExpiredSignatureError:
             raise AuthenticationFailed('Token has expired')

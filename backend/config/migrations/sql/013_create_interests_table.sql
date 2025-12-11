@@ -17,3 +17,5 @@ CREATE INDEX IF NOT EXISTS idx_interests_resume_id ON public.interests(resume_id
 -- Policies already exist, just ensure table is created
 SELECT 1;
 
+
+
