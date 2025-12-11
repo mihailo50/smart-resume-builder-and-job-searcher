@@ -104,6 +104,7 @@ export default function OptimizePage() {
           // Authenticated mode - try to load from API
           try {
             const resume = await api.get<{ 
+              title?: string;
               summary?: string;
               optimized_summary?: string;
               experiences?: any[];

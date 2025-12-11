@@ -302,17 +302,8 @@ export default function SummaryPage() {
     // Try router.push first
     console.log('Attempting router.push...');
     try {
-      const pushResult = router.push(targetUrl);
-      console.log('router.push returned:', pushResult);
-      if (pushResult && typeof pushResult.then === 'function') {
-        pushResult.then(() => {
-          console.log('✅ router.push promise resolved');
-        }).catch((err: any) => {
-          console.error('❌ router.push promise rejected:', err);
-          console.log('🔄 Falling back to window.location.href');
-          window.location.href = targetUrl;
-        });
-      }
+      router.push(targetUrl);
+      console.log('✅ router.push called');
     } catch (e) {
       console.error('❌ router.push threw error:', e);
       console.log('🔄 Falling back to window.location.href');

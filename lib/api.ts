@@ -39,9 +39,9 @@ class ApiClient {
   ): Promise<T> {
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     };
 
     if (token) {
@@ -211,7 +211,7 @@ class ApiClient {
     return new Error(errorMessage);
   }
 
-  async get<T = any>(endpoint: string, options?: RequestInit): Promise<T> {
+  async get<T = any>(endpoint: string, options?: RequestInit & { params?: Record<string, string> }): Promise<T> {
     return this.request<T>(endpoint, {
       ...options,
       method: 'GET',
@@ -252,9 +252,9 @@ class ApiClient {
   async postBlob(endpoint: string, data?: any, options?: RequestInit): Promise<Blob> {
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options?.headers,
+      ...(options?.headers as Record<string, string>),
     };
 
     if (token) {

@@ -11,19 +11,24 @@ export interface GuestResumeData {
     linkedin?: string;
     github?: string;
     portfolio?: string;
+    summary?: string;
+    professionalTagline?: string;
   };
   summary?: {
     summary?: string;
     professionalTagline?: string;
   };
+  optimizedSummary?: string;
   experiences?: Array<{
     id?: string;
     title?: string;
+    position?: string;
     company?: string;
     location?: string;
     startDate?: string;
     endDate?: string;
     current?: boolean;
+    isCurrent?: boolean;
     description?: string;
     order?: number;
   }>;
@@ -37,6 +42,7 @@ export interface GuestResumeData {
     startDate?: string;
     endDate?: string;
     current?: boolean;
+    isCurrent?: boolean;
     description?: string;
     order?: number;
   }>;
@@ -44,6 +50,7 @@ export interface GuestResumeData {
     id?: string;
     name?: string;
     level?: string;
+    category?: string;
     order?: number;
   }>;
   projects?: Array<{
