@@ -148,7 +148,7 @@ export default function ProjectsPage() {
     if (!resumeId) return;
     
     // Get existing projects from backend
-    const existingProjects = await api.get(`/v1/resumes/${resumeId}/projects/`);
+    const existingProjects = await api.get<any[]>(`/v1/resumes/${resumeId}/projects/`);
     const existingIds = new Set(existingProjects.map((proj: any) => proj.id));
 
     // Save/update each project

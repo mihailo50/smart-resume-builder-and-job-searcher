@@ -141,7 +141,7 @@ export default function EducationPage() {
     if (!resumeId) return;
     
     // Get existing educations from backend
-    const existingEducations = await api.get(`/v1/resumes/${resumeId}/educations/`);
+    const existingEducations = await api.get<any[]>(`/v1/resumes/${resumeId}/educations/`);
     const existingIds = new Set(existingEducations.map((edu: any) => edu.id));
 
     // Save/update each education

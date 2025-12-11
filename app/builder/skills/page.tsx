@@ -117,7 +117,7 @@ export default function SkillsPage() {
     if (!resumeId) return;
     
     // Get existing skills from backend
-    const existingSkills = await api.get(`/v1/resumes/${resumeId}/skills/`);
+    const existingSkills = await api.get<any[]>(`/v1/resumes/${resumeId}/skills/`);
     const existingIds = new Set(existingSkills.map((skill: any) => skill.id));
 
     // Save/update each skill

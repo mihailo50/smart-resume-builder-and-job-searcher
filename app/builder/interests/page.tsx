@@ -131,7 +131,7 @@ export default function InterestsPage() {
     if (!resumeId) return;
     
     // Get existing interests from backend
-    const existingInterests = await api.get(`/v1/resumes/${resumeId}/interests/`);
+    const existingInterests = await api.get<any[]>(`/v1/resumes/${resumeId}/interests/`);
     const existingIds = new Set(existingInterests.map((int: any) => int.id));
 
     // Save/update each interest
