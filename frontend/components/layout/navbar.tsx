@@ -51,7 +51,7 @@ export function Navbar() {
   const [guestEmail, setGuestEmail] = useState<string | null>(null);
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
-  const { isDirty: isFormDirty } = useGlobalDirtyState();
+  const isFormDirty = useGlobalDirtyState();
 
   // Check for meaningful guest resume progress
   const checkGuestProgress = (): boolean => {
