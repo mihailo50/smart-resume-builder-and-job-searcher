@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { PageTransition } from '@/components/ui/page-transition';
@@ -52,7 +52,7 @@ interface AnalysisResult {
   matched_keywords?: string[];
 }
 
-export default function OptimizePage() {
+function OptimizeContent() {
   // Enable guest guard to prevent data loss
   useGuestGuard();
   
@@ -1112,3 +1112,14 @@ export default function OptimizePage() {
   );
 }
 
+export default function OptimizePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
+      <OptimizeContent />
+    </Suspense>
+  );
+}
