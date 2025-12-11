@@ -234,7 +234,7 @@ function EducationContent() {
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
         <Navbar />
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <div className="mb-8">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-muted-foreground">Step 4 of 11</span>
