@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from 'sonner';
 
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState('Finishing sign in...');
@@ -42,11 +42,24 @@ export default function AuthCallbackPage() {
   }, [router, searchParams]);
 
   return (
+    <div className="flex items-center space-x-3 text-muted-foreground">
+      <Loader2 className="h-5 w-5 animate-spin" />
+      <span>{status}</span>
+    </div>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
-      <div className="flex items-center space-x-3 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-        <span>{status}</span>
-      </div>
+      <Suspense fallback={
+        <div className="flex items-center space-x-3 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Loading...</span>
+        </div>
+      }>
+        <AuthCallbackContent />
+      </Suspense>
     </div>
   );
 }
