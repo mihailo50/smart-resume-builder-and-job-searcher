@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { PageTransition } from '@/components/ui/page-transition';
@@ -25,7 +25,7 @@ import {
 } from '@/lib/guest-resume';
 import { AISummaryModal } from '@/components/resume/ai-summary-modal';
 
-export default function SummaryPage() {
+function SummaryContent() {
   // Enable guest guard to prevent data loss
   useGuestGuard();
   
@@ -515,4 +515,14 @@ export default function SummaryPage() {
   );
 }
 
-
+export default function SummaryPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
+      <SummaryContent />
+    </Suspense>
+  );
+}
