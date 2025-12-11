@@ -59,7 +59,9 @@ db.sqlite3-journal
 
 # Backend specific
 backend/logs/
-backend/media/
+backend/media/avatars/
+backend/media/exports/
+backend/media/resumes/
 backend/staticfiles/
 backend/.venv/
 backend/*.log

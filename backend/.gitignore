@@ -48,8 +48,15 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
-# Media files (user uploads - stored in Supabase in production)
-media/
+# Media files - User uploads (stored in Supabase in production)
+media/avatars/
+media/exports/
+media/resumes/
+
+# Keep template previews and thumbnails (static assets)
+!media/templates/
+
+# Django collected static files
 staticfiles/
 
 # Logs
