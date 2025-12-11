@@ -1,4 +1,14 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+// API Base URL - required in production, defaults to localhost in development
+const API_BASE_URL = (() => {
+  const url = process.env.NEXT_PUBLIC_API_URL;
+  
+  // In production, API URL must be set
+  if (process.env.NODE_ENV === 'production' && !url) {
+    console.error('[API] NEXT_PUBLIC_API_URL is not configured. API calls will fail.');
+  }
+  
+  return url || 'http://localhost:8000/api';
+})();
 
 interface ApiError {
   message: string;
@@ -275,4 +285,6 @@ class ApiClient {
 }
 
 export const api = new ApiClient();
+
+
 
