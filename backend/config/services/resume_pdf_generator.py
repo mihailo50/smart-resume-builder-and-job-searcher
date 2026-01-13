@@ -147,24 +147,24 @@ class PremiumResumePDFGenerator:
         template_path = f'resumes/{template_name}.html'
         html_content = render_to_string(template_path, context)
         
-        # CRITICAL DEBUG: Log what's in context
-        logger.error(f"=== PDF GENERATION DEBUG ===")
-        logger.error(f"Template: {template_name}")
-        logger.error(f"Full name: '{context.get('full_name', 'MISSING')}'")
-        logger.error(f"Title: '{context.get('title', 'MISSING')}'")
-        logger.error(f"Summary length: {len(context.get('summary', ''))}")
-        logger.error(f"Experiences count: {len(context.get('experiences', []))}")
-        logger.error(f"Projects count: {len(context.get('projects', []))}")
-        logger.error(f"Skills count: {len(context.get('skills', []))}")
-        logger.error(f"Educations count: {len(context.get('educations', []))}")
-        logger.error(f"Certifications count: {len(context.get('certifications', []))}")
-        logger.error(f"HTML length: {len(html_content)}")
-        logger.error(f"HTML preview (first 500 chars): {html_content[:500]}")
+        # Debug logging for PDF generation
+        logger.debug(f"=== PDF GENERATION DEBUG ===")
+        logger.debug(f"Template: {template_name}")
+        logger.debug(f"Full name: '{context.get('full_name', 'MISSING')}'")
+        logger.debug(f"Title: '{context.get('title', 'MISSING')}'")
+        logger.debug(f"Summary length: {len(context.get('summary', ''))}")
+        logger.debug(f"Experiences count: {len(context.get('experiences', []))}")
+        logger.debug(f"Projects count: {len(context.get('projects', []))}")
+        logger.debug(f"Skills count: {len(context.get('skills', []))}")
+        logger.debug(f"Educations count: {len(context.get('educations', []))}")
+        logger.debug(f"Certifications count: {len(context.get('certifications', []))}")
+        logger.debug(f"HTML length: {len(html_content)}")
+        logger.debug(f"HTML preview (first 500 chars): {html_content[:500]}")
         
         # Generate PDF
         try:
             pdf_bytes = self._generate_pdf_from_html(html_content, template_name)
-            logger.error(f"PDF generated: {len(pdf_bytes)} bytes")
+            logger.debug(f"PDF generated: {len(pdf_bytes)} bytes")
             return (pdf_bytes, html_content)
         except Exception as e:
             logger.error(f"Error generating PDF: {e}")
@@ -223,7 +223,7 @@ class PremiumResumePDFGenerator:
         # Sort experiences by start date (most recent first)
         # CRITICAL: Ensure we have a list, not None
         experiences_raw = resume_data.get('experiences') or []
-        logger.error(f"RAW experiences from resume_data: {type(experiences_raw)}, length: {len(experiences_raw) if isinstance(experiences_raw, list) else 'NOT A LIST'}")
+        logger.debug(f"RAW experiences from resume_data: {type(experiences_raw)}, length: {len(experiences_raw) if isinstance(experiences_raw, list) else 'NOT A LIST'}")
         if isinstance(experiences_raw, list) and len(experiences_raw) > 0:
             experiences = sorted(
                 experiences_raw,
@@ -296,16 +296,16 @@ class PremiumResumePDFGenerator:
         languages_list = resume_data.get('languages') or []
         interests_list = resume_data.get('interests') or []
         
-        logger.error(f"=== CONTEXT PREPARATION ===")
-        logger.error(f"Experiences (sorted): {len(experiences)}")
-        logger.error(f"Projects: {len(projects_list)}")
-        logger.error(f"Skills: {len(skills_list)}")
-        logger.error(f"Educations: {len(educations)}")
-        logger.error(f"Certifications: {len(certifications_list)}")
-        logger.error(f"Languages: {len(languages_list)}")
-        logger.error(f"Full name: '{full_name}'")
-        logger.error(f"Title: '{title}'")
-        logger.error(f"Summary: '{summary_text[:100] if summary_text else 'EMPTY'}...'")
+        logger.debug(f"=== CONTEXT PREPARATION ===")
+        logger.debug(f"Experiences (sorted): {len(experiences)}")
+        logger.debug(f"Projects: {len(projects_list)}")
+        logger.debug(f"Skills: {len(skills_list)}")
+        logger.debug(f"Educations: {len(educations)}")
+        logger.debug(f"Certifications: {len(certifications_list)}")
+        logger.debug(f"Languages: {len(languages_list)}")
+        logger.debug(f"Full name: '{full_name}'")
+        logger.debug(f"Title: '{title}'")
+        logger.debug(f"Summary: '{summary_text[:100] if summary_text else 'EMPTY'}...'")
         
         context = {
             'resume': resume_data,  # Include full resume data for template access
@@ -398,13 +398,13 @@ class PremiumResumePDFGenerator:
             # Try with None first (allows absolute URLs like https://fonts.googleapis.com)
             html_doc = HTML(string=html_content, base_url=None)
             
-            logger.error(f"=== WEASYPRINT GENERATION ===")
-            logger.error(f"HTML doc created, length: {len(html_content)}")
+            logger.debug(f"=== WEASYPRINT GENERATION ===")
+            logger.debug(f"HTML doc created, length: {len(html_content)}")
             
             # Generate PDF - WeasyPrint automatically processes inline <style> tags
             pdf_bytes = html_doc.write_pdf(stylesheets=[], font_config=font_config)
             
-            logger.error(f"PDF bytes generated: {len(pdf_bytes)}")
+            logger.debug(f"PDF bytes generated: {len(pdf_bytes)}")
             
             logger.info(f"✓ Successfully generated PDF with WeasyPrint ({len(pdf_bytes)} bytes)")
             if len(pdf_bytes) < 10000:
