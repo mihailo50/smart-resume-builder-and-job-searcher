@@ -44,7 +44,7 @@
             border-bottom: 2px solid #6366f1;
             box-shadow: none !important;
         }
-        .qr-code, .photo-container, .gradient-bg, .header-right {
+        .photo-container, .gradient-bg {
             display: none !important;
         }
         .section-divider {
@@ -128,20 +128,7 @@
             flex-shrink: 0;
         }
         
-        .header-right {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 0.5rem;
-        }
         
-        .qr-code {
-            width: 60px;
-            height: 60px;
-            border: 1px solid #e0e7ff;
-            border-radius: 4px;
-            padding: 2px;
-        }
         
         /* Sections */
         .section {
@@ -306,49 +293,6 @@
             font-size: 0.85rem;
         }
         
-        /* Footer - Bottom-right watermark */
-        .footer {
-            position: fixed;
-            bottom: 0;
-            right: 0;
-            left: 0;
-            text-align: right;
-            font-size: 10px;
-            color: #d1d5db;
-            padding: 0.15cm 0.3cm;
-            border-top: none;
-            z-index: 1000;
-        }
-        
-        /* Tiny QR code in bottom-left corner */
-        .qr-code-footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 35px;
-            height: 35px;
-            z-index: 1000;
-            padding: 3px;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 2px;
-        }
-        
-        .qr-code-footer img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-        
-        /* QR Code */
-        {% if qr_code %}
-        .qr-code-img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-        {% endif %}
-        
         @media print {
             body { print-color-adjust: exact; }
             .page-break { page-break-after: always; }
@@ -420,13 +364,6 @@
                 </div>
             </div>
             
-            <div class="header-right">
-                {% if qr_code %}
-                <div class="qr-code">
-                    <img src="{{ qr_code }}" alt="QR Code" class="qr-code-img">
-                </div>
-                {% endif %}
-            </div>
         </div>
         
         <!-- Summary -->
@@ -559,17 +496,6 @@
         </section>
         {% endif %}
 
-        <!-- Footer QR Code (Bottom-left) -->
-        {% if qr_code_footer %}
-        <div class="qr-code-footer">
-            <img src="{{ qr_code_footer }}" alt="Portfolio QR Code">
-        </div>
-        {% endif %}
-        
-        <!-- Footer Watermark (Bottom-right) -->
-        <div class="footer">
-            Designed with ResumeAI Pro
-        </div>
     </div>
 </body>
 </html>
