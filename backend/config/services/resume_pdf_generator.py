@@ -216,6 +216,41 @@ class PremiumResumePDFGenerator:
             return date_value.strftime('%b %Y')  # e.g., "Aug 2024"
         return ''
     
+    def _format_date_range(self, start_date, end_date, is_current: bool = False) -> str:
+        """
+        Format a date range with en-dash separator.
+        If end_date is in the future or is_current is True, show "Present".
+        Returns: "Aug 2024 – Mar 2025" or "Aug 2024 – Present"
+        """
+        from datetime import date
+        
+        start_str = self._format_date(start_date)
+        if not start_str:
+            return ''
+        
+        # Check if current or if end_date is in the future
+        if is_current:
+            return f"{start_str} – Present"
+        
+        if end_date:
+            # Parse end_date if it's a string
+            end_parsed = end_date
+            if isinstance(end_date, str):
+                end_parsed = self._parse_date(end_date)
+            
+            # Check if end_date is in the future
+            if end_parsed and hasattr(end_parsed, 'year'):
+                today = date.today()
+                if end_parsed > today:
+                    logger.info(f"End date {end_parsed} is in the future, using 'Present'")
+                    return f"{start_str} – Present"
+            
+            end_str = self._format_date(end_date)
+            if end_str:
+                return f"{start_str} – {end_str}"
+        
+        return f"{start_str} – Present"
+    
     def _prepare_context(
         self,
         resume_data: Dict[str, Any],
@@ -341,13 +376,16 @@ class PremiumResumePDFGenerator:
                 # Convert date strings to date objects AND pre-formatted strings
                 raw_start = exp.get('start_date')
                 raw_end = exp.get('end_date')
-                logger.info(f"Experience '{company}' raw dates: start='{raw_start}' ({type(raw_start).__name__}), end='{raw_end}' ({type(raw_end).__name__})")
+                is_current = exp.get('is_current', False)
+                logger.info(f"Experience '{company}' raw dates: start='{raw_start}', end='{raw_end}', is_current={is_current}")
                 exp['start_date'] = self._parse_date(raw_start)
                 exp['end_date'] = self._parse_date(raw_end)
-                # Pre-formatted dates for templates that have issues with date filter
+                # Pre-formatted dates
                 exp['start_date_formatted'] = self._format_date(raw_start)
                 exp['end_date_formatted'] = self._format_date(raw_end)
-                logger.info(f"Experience '{company}' formatted dates: start='{exp['start_date_formatted']}', end='{exp['end_date_formatted']}'")
+                # Combined date range with en-dash (handles future dates -> "Present")
+                exp['date_range'] = self._format_date_range(raw_start, raw_end, is_current)
+                logger.info(f"Experience '{company}' date_range: '{exp['date_range']}'")
         
         # Sort education by start date (most recent first)
         educations_raw = resume_data.get('educations') or []
@@ -364,12 +402,19 @@ class PremiumResumePDFGenerator:
         for edu in educations:
             if isinstance(edu, dict):
                 degree = edu.get('degree', '')
+                field_of_study = edu.get('field_of_study', '')
                 institution = edu.get('institution', '')
                 
-                # Fix specific degree: "Python Developer in Python programming language" -> "Certified Python Developer"
-                if degree and 'python developer' in degree.lower() and 'python programming language' in degree.lower():
+                # ENFORCE: Replace "Python Developer in Python programming language" -> "Certified Python Developer"
+                # Check both degree alone and degree + field_of_study combination
+                full_degree_text = f"{degree} in {field_of_study}".lower() if field_of_study else degree.lower()
+                
+                if 'python developer' in full_degree_text and 'python' in full_degree_text:
                     edu['degree_display'] = 'Certified Python Developer'
                     edu['degree_cleaned'] = True
+                    # Clear field_of_study so template doesn't append it again
+                    edu['field_of_study'] = ''
+                    logger.info(f"Education title cleaned: '{degree}' + '{field_of_study}' -> 'Certified Python Developer'")
                 else:
                     edu['degree_display'] = degree
                 
@@ -406,11 +451,14 @@ class PremiumResumePDFGenerator:
             # This MUST be outside the is_high_school block to apply to ALL education entries
             raw_start = edu.get('start_date')
             raw_end = edu.get('end_date')
+            is_current = edu.get('is_current', False)
             edu['start_date'] = self._parse_date(raw_start)
             edu['end_date'] = self._parse_date(raw_end)
             edu['start_date_formatted'] = self._format_date(raw_start)
             edu['end_date_formatted'] = self._format_date(raw_end)
-            logger.info(f"Education '{edu.get('degree', '')}' formatted dates: start='{edu['start_date_formatted']}', end='{edu['end_date_formatted']}'")
+            # Combined date range with en-dash
+            edu['date_range'] = self._format_date_range(raw_start, raw_end, is_current)
+            logger.info(f"Education '{edu.get('degree', '')}' date_range: '{edu['date_range']}'")
         
         # Group skills by category
         skills_by_category = {}
@@ -464,6 +512,8 @@ class PremiumResumePDFGenerator:
             project['end_date'] = self._parse_date(raw_end)
             project['start_date_formatted'] = self._format_date(raw_start)
             project['end_date_formatted'] = self._format_date(raw_end)
+            # Combined date range with en-dash (handles future dates -> "Present")
+            project['date_range'] = self._format_date_range(raw_start, raw_end, False)
             
             # Check if this is a priority project
             is_priority = any(pn in project_title for pn in priority_names)
