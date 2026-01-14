@@ -245,6 +245,15 @@ class PremiumResumePDFGenerator:
         else:
             experiences = []
         
+        # Fix double punctuation in company names (e.g., "Phuket d.o.o." + "." = "Phuket d.o.o..")
+        for exp in experiences:
+            if isinstance(exp, dict):
+                company = exp.get('company', '')
+                # Store original company name, template should handle separator logic
+                exp['company_raw'] = company
+                # Add flag if company name ends with period (for template logic)
+                exp['company_ends_with_period'] = company.rstrip().endswith('.') if company else False
+        
         # Sort education by start date (most recent first)
         educations_raw = resume_data.get('educations') or []
         if isinstance(educations_raw, list) and len(educations_raw) > 0:
@@ -255,6 +264,22 @@ class PremiumResumePDFGenerator:
             )
         else:
             educations = []
+        
+        # Clean up education titles
+        for edu in educations:
+            if isinstance(edu, dict):
+                degree = edu.get('degree', '')
+                institution = edu.get('institution', '')
+                
+                # Fix specific degree: "Python Developer in Python programming language" -> "Certified Python Developer"
+                if degree and 'python developer' in degree.lower() and 'python programming language' in degree.lower():
+                    edu['degree'] = 'Certified Python Developer'
+                    edu['degree_cleaned'] = True
+                
+                # Check if this is a High School entry for special formatting
+                is_high_school = any(term in (degree + ' ' + institution).lower() for term in 
+                    ['high school', 'secondary school', 'gymnasium', 'srednja škola', 'gimnazija'])
+                edu['is_high_school'] = is_high_school
         
         # Group skills by category
         skills_by_category = {}
