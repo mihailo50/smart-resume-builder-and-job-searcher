@@ -515,6 +515,21 @@ class PremiumResumePDFGenerator:
             # Combined date range with en-dash (handles future dates -> "Present")
             project['date_range'] = self._format_date_range(raw_start, raw_end, False)
             
+            # Truncate tech stack to max 5 key technologies
+            technologies = project.get('technologies', '')
+            if technologies:
+                # Split by comma and take first 5
+                tech_list = [t.strip() for t in technologies.split(',')]
+                # For "Smart Resume Builder", use curated list
+                if 'smart resume' in project_title or 'resume builder' in project_title:
+                    project['technologies_short'] = 'Django, React, OpenAI API, Supabase, TypeScript'
+                elif len(tech_list) > 5:
+                    project['technologies_short'] = ', '.join(tech_list[:5])
+                else:
+                    project['technologies_short'] = technologies
+            else:
+                project['technologies_short'] = ''
+            
             # Check if this is a priority project
             is_priority = any(pn in project_title for pn in priority_names)
             
