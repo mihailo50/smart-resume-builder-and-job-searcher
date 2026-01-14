@@ -195,7 +195,7 @@ export default function JobsPage() {
         page?: number;
         total_pages?: number;
         source?: string;
-      }>('v1/jobs/search/', {
+      }>('/v1/jobs/search/', {
         query: searchQuery,
         location: location || undefined,
         country: locationData?.country_code || 'US',
@@ -255,7 +255,7 @@ export default function JobsPage() {
         results: MatchResult[];
         count: number;
         message?: string;
-      }>('v1/jobs/match-all/', {
+      }>('/v1/jobs/match-all/', {
         job_description: jobDescription,
         location: location || undefined,
       });

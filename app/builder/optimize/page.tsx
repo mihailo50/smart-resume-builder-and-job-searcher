@@ -338,7 +338,7 @@ function OptimizeContent() {
       }
 
       // Call analyze endpoint
-      const response = await api.post<AnalysisResult>('v1/ai/analyze-resume/', requestData);
+      const response = await api.post<AnalysisResult>('/v1/ai/analyze-resume/', requestData);
 
       if (response) {
         setAtsScore(response.ats_score);
@@ -419,7 +419,7 @@ function OptimizeContent() {
       }
 
       // Call analyze endpoint
-      const response = await api.post<AnalysisResult>('v1/ai/analyze-resume/', requestData);
+      const response = await api.post<AnalysisResult>('/v1/ai/analyze-resume/', requestData);
 
       if (response) {
         setAtsScore(response.ats_score);
@@ -491,7 +491,7 @@ function OptimizeContent() {
       const response = await api.post<{
         optimized_text: string;
         changes_applied?: string[];
-      }>('v1/ai/apply-suggestions/', {
+      }>('/v1/ai/apply-suggestions/', {
         resume_text: resumeText,
         suggestions: suggestions,
         missing_keywords: missingKeywords,
