@@ -609,6 +609,11 @@ class ResumeViewSet(viewsets.ViewSet):
                 'portfolio_url': resume.get('portfolio_url', ''),
             }
         
+        # Log experiences before passing to PDF generator
+        experiences_for_pdf = resume.get('experiences') or []
+        if experiences_for_pdf:
+            logger.info(f"First experience dates: start_date={experiences_for_pdf[0].get('start_date')}, end_date={experiences_for_pdf[0].get('end_date')}")
+        
         # Prepare COMPLETE resume data for PDF generation - NO DATA STRIPPING
         resume_data = {
             'id': str(resume.get('id', '')),
