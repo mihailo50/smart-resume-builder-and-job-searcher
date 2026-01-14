@@ -215,14 +215,48 @@ class PremiumResumePDFGenerator:
         # Generate initials for fallback
         initials = self._generate_initials(full_name)
         
-        # Prepare contact info
+        # Prepare contact info - check multiple sources
+        contact_email = (
+            resume_data.get('email') or 
+            user_profile.get('email') or 
+            resume_data.get('user_profile', {}).get('email', '')
+        )
+        contact_phone = (
+            resume_data.get('phone') or 
+            user_profile.get('phone') or 
+            resume_data.get('user_profile', {}).get('phone', '')
+        )
+        contact_location = (
+            resume_data.get('location') or 
+            user_profile.get('location') or 
+            resume_data.get('user_profile', {}).get('location', '')
+        )
+        contact_linkedin = (
+            resume_data.get('linkedin_url') or 
+            user_profile.get('linkedin_url') or 
+            resume_data.get('user_profile', {}).get('linkedin_url', '')
+        )
+        contact_github = (
+            resume_data.get('github_url') or 
+            user_profile.get('github_url') or 
+            resume_data.get('user_profile', {}).get('github_url', '')
+        )
+        contact_portfolio = (
+            resume_data.get('portfolio_url') or 
+            user_profile.get('portfolio_url') or 
+            resume_data.get('user_profile', {}).get('portfolio_url', '')
+        )
+        
+        # Log contact info for debugging
+        logger.info(f"Contact info - email: '{contact_email}', phone: '{contact_phone}', location: '{contact_location}'")
+        
         contact_info = {
-            'email': resume_data.get('email') or user_profile.get('email', ''),
-            'phone': resume_data.get('phone') or user_profile.get('phone', ''),
-            'location': resume_data.get('location') or user_profile.get('location', ''),
-            'linkedin': resume_data.get('linkedin_url') or user_profile.get('linkedin_url', ''),
-            'github': resume_data.get('github_url') or user_profile.get('github_url', ''),
-            'portfolio': resume_data.get('portfolio_url') or user_profile.get('portfolio_url', ''),
+            'email': contact_email,
+            'phone': contact_phone,
+            'location': contact_location,
+            'linkedin': contact_linkedin,
+            'github': contact_github,
+            'portfolio': contact_portfolio,
         }
         
         # Professional title/tagline - DO NOT use resume_data.get('title') as fallback
@@ -395,6 +429,13 @@ class PremiumResumePDFGenerator:
             'professional_tagline': resume_data.get('professional_tagline', ''),
             'summary': summary_text,
             'contact': contact_info,
+            # Also add individual contact variables for direct access in templates
+            'contact_email': contact_email,
+            'contact_phone': contact_phone,
+            'contact_location': contact_location,
+            'contact_linkedin': contact_linkedin,
+            'contact_github': contact_github,
+            'contact_portfolio': contact_portfolio,
             'experiences': experiences,  # Already a list
             'educations': educations,  # Already a list
             'skills': skills_list,  # Guaranteed to be a list

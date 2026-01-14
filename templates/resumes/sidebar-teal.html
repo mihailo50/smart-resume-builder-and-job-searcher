@@ -4,13 +4,11 @@
     <meta charset="UTF-8">
     <title>Resume</title>
     <style>
-        /* CRITICAL: Use @font-face instead of @import for WeasyPrint compatibility */
         @font-face {
             font-family: 'Inter';
             src: url('https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2') format('woff2');
             font-weight: 300 800;
             font-style: normal;
-            font-display: swap;
         }
         @page {
             size: A4;
@@ -32,7 +30,7 @@
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             font-size: 9pt;
-            line-height: 1.45;
+            line-height: 1.4;
             color: #1a1a1a;
             background: #ffffff;
         }
@@ -44,293 +42,254 @@
             flex-direction: row;
         }
         
-        /* Sidebar - 32% width, FULL HEIGHT */
+        /* Sidebar - 32% width, FULL HEIGHT with teal gradient */
         .sidebar {
             width: 32%;
-            background: linear-gradient(180deg, #14b8a6, #0d9488);
-            color: #ffffff;
-            padding: 0.5cm 0.45cm;
+            background: #0d9488;
+            background: linear-gradient(180deg, #14b8a6 0%, #0d9488 100%);
+            padding: 0.5cm 0.4cm;
             flex-shrink: 0;
         }
         
-        /* CRITICAL: Ensure text is visible on teal background */
-        .sidebar, .sidebar * {
-            color: #ffffff !important;
-        }
-        
-        .sidebar a {
-            color: #ffffff !important;
-            text-decoration: none;
-        }
-        
-        /* Photo - Shrunk to 90px with gradient ring */
+        /* Photo */
         .photo-container {
             text-align: center;
             margin-bottom: 0.4cm;
         }
         
         .photo-placeholder {
-            width: 90px;
-            height: 90px;
+            width: 85px;
+            height: 85px;
             border-radius: 50%;
             background: rgba(255,255,255,0.2);
             margin: 0 auto;
-            border: 3px solid white;
+            border: 3px solid #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            font-size: 1.6rem;
-            color: white !important;
+            font-size: 1.5rem;
+            color: #ffffff;
         }
         
         .photo-img {
-            width: 90px;
-            height: 90px;
+            width: 85px;
+            height: 85px;
             border-radius: 50%;
             object-fit: cover;
-            border: 3px solid white;
+            border: 3px solid #ffffff;
         }
         
         .name {
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             font-weight: 800;
-            margin-bottom: 0.2rem;
+            margin-bottom: 0.15rem;
             text-align: center;
             line-height: 1.2;
-            color: #ffffff !important;
+            color: #ffffff;
         }
         
         .title {
-            font-size: 0.75rem;
-            text-align: center;
-            opacity: 0.95;
-            margin-bottom: 0.4cm;
-            font-weight: 400;
-            color: #ffffff !important;
-        }
-        
-        /* Sidebar Sections */
-        .sidebar-section {
-            margin-bottom: 0.35cm;
-            page-break-inside: avoid;
-        }
-        
-        .sidebar-section-title {
             font-size: 0.7rem;
+            text-align: center;
+            margin-bottom: 0.35cm;
+            font-weight: 400;
+            color: #ffffff;
+            opacity: 0.95;
+        }
+        
+        /* Sidebar Section Styling */
+        .sidebar-section {
+            margin-bottom: 0.3cm;
+        }
+        
+        .sidebar-title {
+            font-size: 0.65rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            margin-bottom: 0.2rem;
-            padding-bottom: 0.15rem;
+            margin-bottom: 0.15rem;
+            padding-bottom: 0.1rem;
             border-bottom: 1.5px solid rgba(255,255,255,0.4);
-            color: #ffffff !important;
+            color: #ffffff;
         }
         
-        .contact-item {
+        /* Contact Items */
+        .contact-row {
             display: flex;
             align-items: flex-start;
-            gap: 0.3rem;
-            margin-bottom: 0.18rem;
-            font-size: 0.68rem;
-            color: #ffffff !important;
+            gap: 0.25rem;
+            margin-bottom: 0.12rem;
+            font-size: 0.62rem;
+            color: #ffffff;
         }
         
-        .contact-icon {
-            width: 11px;
-            height: 11px;
+        .contact-row svg {
+            width: 10px;
+            height: 10px;
             fill: #ffffff;
             flex-shrink: 0;
-            margin-top: 0.08rem;
+            margin-top: 2px;
         }
         
-        .contact-text {
-            color: #ffffff !important;
+        .contact-row span {
+            color: #ffffff;
             word-break: break-word;
         }
         
-        .sidebar-item {
-            margin-bottom: 0.15rem;
-            font-size: 0.68rem;
-            padding-left: 0.5rem;
+        /* Sidebar list items */
+        .sidebar-list-item {
+            margin-bottom: 0.1rem;
+            font-size: 0.62rem;
+            padding-left: 0.4rem;
             position: relative;
-            color: #ffffff !important;
+            color: #ffffff;
         }
         
-        .sidebar-item::before {
+        .sidebar-list-item::before {
             content: '•';
             position: absolute;
             left: 0;
             color: rgba(255,255,255,0.7);
-            font-weight: bold;
         }
         
+        /* Certification in sidebar */
         .sidebar-cert {
-            margin-bottom: 0.2rem;
-            font-size: 0.65rem;
-            color: #ffffff !important;
+            margin-bottom: 0.15rem;
+            color: #ffffff;
         }
         
         .sidebar-cert-name {
-            font-weight: 600;
-            color: #ffffff !important;
-        }
-        
-        .sidebar-cert-issuer {
             font-size: 0.6rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+        
+        .sidebar-cert-detail {
+            font-size: 0.55rem;
+            color: #ffffff;
             opacity: 0.85;
-            color: #ffffff !important;
         }
         
+        /* Language in sidebar */
         .sidebar-lang {
-            margin-bottom: 0.12rem;
-            font-size: 0.68rem;
-            color: #ffffff !important;
+            font-size: 0.62rem;
+            margin-bottom: 0.08rem;
+            color: #ffffff;
         }
         
-        .sidebar-interest-list {
-            font-size: 0.65rem;
-            line-height: 1.5;
-            color: #ffffff !important;
+        /* Interests as comma list */
+        .sidebar-interests {
+            font-size: 0.6rem;
+            color: #ffffff;
+            line-height: 1.4;
         }
         
         /* Main Content - 68% width */
         .main-content {
             flex: 1;
             width: 68%;
-            padding: 0.5cm 0.55cm;
-            background: white;
+            padding: 0.45cm 0.5cm;
+            background: #ffffff;
         }
         
         .section {
-            margin-bottom: 0.4cm;
-            page-break-inside: avoid;
+            margin-bottom: 0.35cm;
         }
         
         .section-title {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 700;
             color: #0d9488;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
-            margin-bottom: 0.25rem;
-            padding-bottom: 0.15rem;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.2rem;
+            padding-bottom: 0.12rem;
             border-bottom: 1.5px solid #5eead4;
         }
         
         /* Experience */
-        .experience-item {
-            margin-bottom: 0.35rem;
-            page-break-inside: avoid;
+        .exp-item {
+            margin-bottom: 0.3rem;
         }
         
         .exp-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 0.1rem;
+            margin-bottom: 0.08rem;
         }
         
         .exp-title {
             font-weight: 700;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: #1a1a1a;
         }
         
         .exp-company {
             color: #14b8a6;
             font-weight: 600;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
         }
         
         .exp-dates {
             color: #64748b;
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             white-space: nowrap;
         }
         
-        .exp-description {
+        .exp-desc {
             color: #475569;
-            font-size: 0.72rem;
-            line-height: 1.5;
-            margin-top: 0.15rem;
-        }
-        
-        .exp-description ul {
-            list-style: none;
-            padding-left: 0;
-            margin: 0;
-        }
-        
-        .exp-description li {
-            position: relative;
-            padding-left: 0.7rem;
-            margin-bottom: 0.1rem;
-        }
-        
-        .exp-description li::before {
-            content: '•';
-            position: absolute;
-            left: 0;
-            color: #14b8a6;
-            font-weight: bold;
+            font-size: 0.68rem;
+            line-height: 1.45;
+            margin-top: 0.1rem;
         }
         
         /* Education */
-        .education-item {
-            margin-bottom: 0.3rem;
-            page-break-inside: avoid;
+        .edu-item {
+            margin-bottom: 0.25rem;
         }
         
         .edu-degree {
             font-weight: 700;
-            font-size: 0.78rem;
+            font-size: 0.72rem;
             color: #1a1a1a;
         }
         
-        .edu-institution {
+        .edu-school {
             color: #14b8a6;
             font-weight: 600;
-            font-size: 0.72rem;
+            font-size: 0.68rem;
         }
         
         .edu-dates {
             color: #64748b;
-            font-size: 0.65rem;
-            margin-top: 0.05rem;
+            font-size: 0.58rem;
         }
         
         /* Summary */
         .summary-text {
             color: #475569;
-            line-height: 1.55;
-            font-size: 0.75rem;
+            line-height: 1.5;
+            font-size: 0.7rem;
         }
         
         @media print {
-            html, body {
-                height: 100%;
-            }
             body { 
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            .resume-container { 
-                min-height: 100%;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
             .sidebar {
-                background: linear-gradient(180deg, #14b8a6, #0d9488) !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
+                background: #0d9488 !important;
             }
         }
     </style>
 </head>
 <body>
     <div class="resume-container">
-        <!-- Sidebar - 32% -->
+        <!-- SIDEBAR -->
         <div class="sidebar">
-            <!-- Photo with Initials Fallback -->
+            <!-- Photo -->
             <div class="photo-container">
                 {% if photo_base64 %}
                 <img src="data:image/jpeg;base64,{{ photo_base64 }}" alt="Photo" class="photo-img">
@@ -346,131 +305,89 @@
             <p class="title">{{ title }}</p>
             {% endif %}
             
-            <!-- CONTACT SECTION - FIXED with explicit white text -->
+            <!-- CONTACT - Using direct variables -->
             <div class="sidebar-section">
-                <h3 class="sidebar-section-title">Contact</h3>
-                
-                <!-- Email - check multiple sources -->
-                {% if contact.email %}
-                <div class="contact-item">
-                    <svg class="contact-icon" viewBox="0 0 20 20">
-                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
-                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
-                    </svg>
-                    <span class="contact-text">{{ contact.email }}</span>
-                </div>
-                {% elif resume.email %}
-                <div class="contact-item">
-                    <svg class="contact-icon" viewBox="0 0 20 20">
-                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
-                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
-                    </svg>
-                    <span class="contact-text">{{ resume.email }}</span>
+                <h3 class="sidebar-title">Contact</h3>
+                {% if contact_email %}
+                <div class="contact-row">
+                    <svg viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+                    <span>{{ contact_email }}</span>
                 </div>
                 {% endif %}
-                
-                <!-- Phone -->
-                {% if contact.phone %}
-                <div class="contact-item">
-                    <svg class="contact-icon" viewBox="0 0 20 20">
-                        <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
-                    </svg>
-                    <span class="contact-text">{{ contact.phone }}</span>
-                </div>
-                {% elif resume.phone %}
-                <div class="contact-item">
-                    <svg class="contact-icon" viewBox="0 0 20 20">
-                        <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
-                    </svg>
-                    <span class="contact-text">{{ resume.phone }}</span>
+                {% if contact_phone %}
+                <div class="contact-row">
+                    <svg viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
+                    <span>{{ contact_phone }}</span>
                 </div>
                 {% endif %}
-                
-                <!-- Location -->
-                {% if contact.location %}
-                <div class="contact-item">
-                    <svg class="contact-icon" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
-                    </svg>
-                    <span class="contact-text">{{ contact.location }}</span>
-                </div>
-                {% elif resume.location %}
-                <div class="contact-item">
-                    <svg class="contact-icon" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
-                    </svg>
-                    <span class="contact-text">{{ resume.location }}</span>
+                {% if contact_location %}
+                <div class="contact-row">
+                    <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
+                    <span>{{ contact_location }}</span>
                 </div>
                 {% endif %}
-                
-                <!-- LinkedIn -->
-                {% if contact.linkedin %}
-                <div class="contact-item">
-                    <svg class="contact-icon" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.338 16.338H13.67V12.16c0-.995-.017-2.277-1.387-2.277-1.39 0-1.601 1.086-1.601 2.207v4.248H8.014v-8.59h2.559v1.174h.037c.356-.675 1.227-1.387 2.526-1.387 2.703 0 3.203 1.778 3.203 4.092v4.711zM5.005 6.575a1.548 1.548 0 11-.003-3.096 1.548 1.548 0 01.003 3.096zm-1.337 9.763H6.34v-8.59H3.667v8.59zM17.668 1H2.328C1.595 1 1 1.581 1 2.298v15.403C1 18.418 1.595 19 2.328 19h15.34c.734 0 1.332-.582 1.332-1.299V2.298C19 1.581 18.402 1 17.668 1z" clip-rule="evenodd"/>
-                    </svg>
-                    <span class="contact-text">LinkedIn</span>
+                {% if contact_linkedin %}
+                <div class="contact-row">
+                    <svg viewBox="0 0 20 20"><path d="M16.338 16.338H13.67V12.16c0-.995-.017-2.277-1.387-2.277-1.39 0-1.601 1.086-1.601 2.207v4.248H8.014v-8.59h2.559v1.174h.037c.356-.675 1.227-1.387 2.526-1.387 2.703 0 3.203 1.778 3.203 4.092v4.711zM5.005 6.575a1.548 1.548 0 11-.003-3.096 1.548 1.548 0 01.003 3.096zm-1.337 9.763H6.34v-8.59H3.667v8.59zM17.668 1H2.328C1.595 1 1 1.581 1 2.298v15.403C1 18.418 1.595 19 2.328 19h15.34c.734 0 1.332-.582 1.332-1.299V2.298C19 1.581 18.402 1 17.668 1z"/></svg>
+                    <span>LinkedIn</span>
                 </div>
                 {% endif %}
-                
-                <!-- GitHub -->
-                {% if contact.github %}
-                <div class="contact-item">
-                    <svg class="contact-icon" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z" clip-rule="evenodd"/>
-                    </svg>
-                    <span class="contact-text">GitHub</span>
+                {% if contact_github %}
+                <div class="contact-row">
+                    <svg viewBox="0 0 20 20"><path d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z"/></svg>
+                    <span>GitHub</span>
                 </div>
+                {% endif %}
+                {% if not contact_email and not contact_phone and not contact_location %}
+                <div class="contact-row"><span style="opacity:0.7">No contact info</span></div>
                 {% endif %}
             </div>
             
-            <!-- Skills in Sidebar -->
-            {% if skills and skills|length > 0 %}
+            <!-- SKILLS -->
+            {% if skills %}
             <div class="sidebar-section">
-                <h3 class="sidebar-section-title">Skills</h3>
+                <h3 class="sidebar-title">Skills</h3>
                 {% for skill in skills %}
-                <div class="sidebar-item">{{ skill.name }}{% if skill.level %} ({{ skill.level }}){% endif %}</div>
+                <div class="sidebar-list-item">{{ skill.name }}{% if skill.level %} ({{ skill.level }}){% endif %}</div>
                 {% endfor %}
             </div>
             {% endif %}
             
-            <!-- CERTIFICATIONS - MOVED TO SIDEBAR -->
-            {% if certifications and certifications|length > 0 %}
+            <!-- LANGUAGES - IN SIDEBAR -->
+            {% if languages %}
             <div class="sidebar-section">
-                <h3 class="sidebar-section-title">Certifications</h3>
-                {% for cert in certifications %}
-                <div class="sidebar-cert">
-                    <div class="sidebar-cert-name">{{ cert.name|default:cert.title }}</div>
-                    {% if cert.issuer %}
-                    <div class="sidebar-cert-issuer">{{ cert.issuer }}{% if cert.issue_date %} • {{ cert.issue_date|date:"M Y" }}{% endif %}</div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-            
-            <!-- LANGUAGES - MOVED TO SIDEBAR (distinct format for cruise line) -->
-            {% if languages and languages|length > 0 %}
-            <div class="sidebar-section">
-                <h3 class="sidebar-section-title">Languages</h3>
+                <h3 class="sidebar-title">Languages</h3>
                 {% for lang in languages %}
                 <div class="sidebar-lang">{{ lang.name }}{% if lang.proficiency %} ({{ lang.proficiency }}){% endif %}</div>
                 {% endfor %}
             </div>
             {% endif %}
             
-            <!-- INTERESTS - MOVED TO SIDEBAR -->
-            {% if interests and interests|length > 0 %}
+            <!-- CERTIFICATIONS - IN SIDEBAR -->
+            {% if certifications %}
             <div class="sidebar-section">
-                <h3 class="sidebar-section-title">Interests</h3>
-                <div class="sidebar-interest-list">
+                <h3 class="sidebar-title">Certifications</h3>
+                {% for cert in certifications %}
+                <div class="sidebar-cert">
+                    <div class="sidebar-cert-name">{{ cert.name|default:cert.title }}</div>
+                    {% if cert.issuer %}<div class="sidebar-cert-detail">{{ cert.issuer }}</div>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- INTERESTS - IN SIDEBAR -->
+            {% if interests %}
+            <div class="sidebar-section">
+                <h3 class="sidebar-title">Interests</h3>
+                <div class="sidebar-interests">
                     {% for interest in interests %}{{ interest.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
                 </div>
             </div>
             {% endif %}
         </div>
         
-        <!-- Main Content - 68% -->
+        <!-- MAIN CONTENT -->
         <div class="main-content">
             <!-- Summary -->
             {% if summary %}
@@ -481,11 +398,11 @@
             {% endif %}
             
             <!-- Experience -->
-            {% if experiences and experiences|length > 0 %}
+            {% if experiences %}
             <section class="section">
                 <h2 class="section-title">Work Experience</h2>
                 {% for exp in experiences %}
-                <div class="experience-item">
+                <div class="exp-item">
                     <div class="exp-header">
                         <div>
                             <div class="exp-title">{{ exp.position }}</div>
@@ -496,11 +413,7 @@
                         </div>
                     </div>
                     {% if exp.description %}
-                    <div class="exp-description">
-                        {% autoescape off %}
-                        {{ exp.description|linebreaks }}
-                        {% endautoescape %}
-                    </div>
+                    <div class="exp-desc">{% autoescape off %}{{ exp.description|linebreaks }}{% endautoescape %}</div>
                     {% endif %}
                 </div>
                 {% endfor %}
@@ -508,64 +421,44 @@
             {% endif %}
             
             <!-- Education -->
-            {% if educations and educations|length > 0 %}
+            {% if educations %}
             <section class="section">
                 <h2 class="section-title">Education</h2>
                 {% for edu in educations %}
-                <div class="education-item">
+                <div class="edu-item">
                     {% if edu.is_high_school %}
-                    <!-- High School: Show as "High School Diploma" with institution separate -->
                     <div class="edu-degree">{{ edu.degree_display|default:"High School Diploma" }}</div>
-                    <div class="edu-institution">{{ edu.institution_display|default:edu.institution }}</div>
+                    <div class="edu-school">{{ edu.institution_display|default:edu.institution }}</div>
                     {% else %}
-                    <!-- Regular Education: Degree first, then institution -->
                     <div class="edu-degree">{{ edu.degree_display|default:edu.degree }}{% if edu.field_of_study %} in {{ edu.field_of_study }}{% endif %}</div>
-                    <div class="edu-institution">{{ edu.institution }}</div>
+                    <div class="edu-school">{{ edu.institution }}</div>
                     {% endif %}
-                    <div class="edu-dates">
-                        {% if edu.start_date %}{{ edu.start_date|date:"M Y" }} – {% endif %}{% if edu.is_current %}Present{% elif edu.end_date %}{{ edu.end_date|date:"M Y" }}{% else %}{% if edu.start_date %}Present{% endif %}{% endif %}
-                    </div>
-                    {% if edu.description %}
-                    <div style="color: #475569; margin-top: 0.1rem; font-size: 0.68rem;">{{ edu.description }}</div>
-                    {% endif %}
+                    <div class="edu-dates">{% if edu.start_date %}{{ edu.start_date|date:"M Y" }} – {% endif %}{% if edu.is_current %}Present{% elif edu.end_date %}{{ edu.end_date|date:"M Y" }}{% else %}{% if edu.start_date %}Present{% endif %}{% endif %}</div>
                 </div>
                 {% endfor %}
             </section>
             {% endif %}
             
-            <!-- Projects - LIMITED TO FIRST 3 -->
-            {% if projects and projects|length > 0 %}
+            <!-- Projects - LIMIT TO 3 -->
+            {% if projects %}
             <section class="section">
                 <h2 class="section-title">Projects</h2>
                 {% for project in projects %}
                 {% if forloop.counter <= 3 %}
-                <div class="experience-item">
+                <div class="exp-item">
                     <div class="exp-header">
                         <div>
                             <div class="exp-title">{{ project.title|default:project.name }}</div>
-                            {% if project.technologies %}
-                            <div class="exp-company" style="color: #64748b;">{{ project.technologies }}</div>
-                            {% endif %}
+                            {% if project.technologies %}<div class="exp-company" style="color:#64748b;">{{ project.technologies }}</div>{% endif %}
                         </div>
-                        {% if project.start_date %}
-                        <div class="exp-dates">
-                            {{ project.start_date|date:"M Y" }} – {% if project.end_date %}{{ project.end_date|date:"M Y" }}{% else %}Present{% endif %}
-                        </div>
-                        {% endif %}
+                        {% if project.start_date %}<div class="exp-dates">{{ project.start_date|date:"M Y" }} – {% if project.end_date %}{{ project.end_date|date:"M Y" }}{% else %}Present{% endif %}</div>{% endif %}
                     </div>
-                    {% if project.description %}
-                    <div class="exp-description">
-                        {% autoescape off %}
-                        {{ project.description|linebreaks }}
-                        {% endautoescape %}
-                    </div>
-                    {% endif %}
+                    {% if project.description %}<div class="exp-desc">{% autoescape off %}{{ project.description|linebreaks }}{% endautoescape %}</div>{% endif %}
                 </div>
                 {% endif %}
                 {% endfor %}
             </section>
             {% endif %}
-
         </div>
     </div>
 </body>
