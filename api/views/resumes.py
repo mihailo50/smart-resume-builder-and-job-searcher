@@ -352,22 +352,30 @@ class ResumeViewSet(viewsets.ViewSet):
             serializer = ProfessionalTaglineSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
         
-        # Extract summary text from various possible fields
-        summary_text = (
-            serializer.validated_data.get('optimized_summary') or
-            serializer.validated_data.get('summary') or
-            serializer.validated_data.get('professional_tagline') or
-            ''
-        )
+        # Build update data based on what was provided
+        update_data = {}
         
-        # Save to optimized_summary (primary field)
-        # Also update summary for backwards compatibility
-        update_data = {
-            'optimized_summary': summary_text,
-            'summary': summary_text[:300] if summary_text else '',  # Keep first 300 chars in summary for backwards compat
-        }
+        # Handle professional_tagline - save to both professional_tagline and summary fields
+        professional_tagline = serializer.validated_data.get('professional_tagline')
+        if professional_tagline is not None:
+            update_data['professional_tagline'] = professional_tagline
+            update_data['summary'] = professional_tagline  # Keep in sync for backwards compat
         
-        logger.info(f"[SUMMARY UPDATE] Updating resume - pk: {pk}, summary length: {len(summary_text)}")
+        # Handle optimized_summary - only update if explicitly provided
+        optimized_summary = serializer.validated_data.get('optimized_summary')
+        if optimized_summary is not None:
+            update_data['optimized_summary'] = optimized_summary
+        
+        # If neither was provided but 'summary' was (legacy), use it for professional_tagline
+        if not update_data and serializer.validated_data.get('summary'):
+            legacy_summary = serializer.validated_data.get('summary')
+            update_data['professional_tagline'] = legacy_summary
+            update_data['summary'] = legacy_summary
+        
+        if not update_data:
+            return Response({'error': 'No data provided'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        logger.info(f"[SUMMARY UPDATE] Updating resume - pk: {pk}, fields: {list(update_data.keys())}")
         updated_resume = service.update(pk, update_data)
         response_serializer = ResumeSerializer(updated_resume)
         logger.info(f"[SUMMARY UPDATE] Successfully updated - pk: {pk}")
