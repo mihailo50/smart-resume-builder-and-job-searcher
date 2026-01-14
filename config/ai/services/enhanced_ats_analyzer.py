@@ -10,11 +10,36 @@ import json
 import logging
 from typing import Dict, Any, Optional, List, Set
 from collections import Counter
-from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
+
+# Lazy-loaded LangChain components (loaded only when AI analysis is needed)
+_langchain_chat_openai = None
+_langchain_prompt_template = None
+_langchain_checked = False
+_langchain_available = None
+
+def _ensure_langchain():
+    """Lazy-load LangChain only when AI features are actually needed."""
+    global _langchain_chat_openai, _langchain_prompt_template, _langchain_checked, _langchain_available
+    
+    if _langchain_checked:
+        return _langchain_available
+    
+    _langchain_checked = True
+    try:
+        from langchain_openai import ChatOpenAI
+        from langchain.prompts import ChatPromptTemplate
+        _langchain_chat_openai = ChatOpenAI
+        _langchain_prompt_template = ChatPromptTemplate
+        _langchain_available = True
+        logger.info("LangChain loaded successfully for AI analysis")
+        return True
+    except (ImportError, OSError) as e:
+        _langchain_available = False
+        logger.warning(f"LangChain not available: {e}")
+        return False
 
 # Try to import fuzzy matching libraries
 try:
@@ -28,30 +53,33 @@ except ImportError:
         RAPIDFUZZ_AVAILABLE = False
         SequenceMatcher = None
 
-# Try to import LangChain
-try:
-    LANGCHAIN_AVAILABLE = True
-except ImportError:
-    LANGCHAIN_AVAILABLE = False
-    ChatOpenAI = None
-    ChatPromptTemplate = None
-
 
 class EnhancedATSAnalyzerService:
     """Enhanced service for analyzing resumes with LangChain and transparent scoring."""
     
     def __init__(self):
         self.logger = logger
-        self.llm = None
+        self._llm = None
+        self._llm_initialized = False
+    
+    @property
+    def llm(self):
+        """Lazy-load the LLM only when needed."""
+        if self._llm_initialized:
+            return self._llm
+        
+        self._llm_initialized = True
         try:
-            if settings.OPENAI_API_KEY:
-                self.llm = ChatOpenAI(
+            if settings.OPENAI_API_KEY and _ensure_langchain():
+                self._llm = _langchain_chat_openai(
                     model="gpt-3.5-turbo",
                     temperature=0,
                     api_key=settings.OPENAI_API_KEY
                 )
         except Exception as e:
             logger.warning(f"OpenAI not available: {e}")
+        
+        return self._llm
     
     def analyze(
         self,
@@ -138,11 +166,11 @@ class EnhancedATSAnalyzerService:
     
     def _extract_job_keywords_langchain(self, job_desc: str) -> Set[str]:
         """Extract unique keywords from job description using LangChain."""
-        if not self.llm or not LANGCHAIN_AVAILABLE:
+        if not self.llm or not _langchain_available:
             return self._extract_keywords_regex(job_desc)
         
         try:
-            prompt = ChatPromptTemplate.from_messages([
+            prompt = _langchain_prompt_template.from_messages([
                 ("system", "You are an expert at extracting technical keywords and skills from job descriptions. "
                           "Extract only unique, relevant keywords (technologies, tools, skills, frameworks). "
                           "Use NLTK-style stemming to normalize (e.g., 'docker' not 'Docker', 'aws' not 'AWS'). "

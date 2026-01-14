@@ -1,5 +1,8 @@
 """
 AI service API views.
+
+NOTE: AI services use lazy imports to prevent memory issues during server startup.
+The heavy LangChain/OpenAI libraries are only loaded when AI endpoints are actually called.
 """
 import logging
 from typing import List, Dict, Any, Optional
@@ -9,12 +12,6 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
 from drf_spectacular.utils import extend_schema
-from config.ai.services.ats_analyzer import ATSAnalyzerService
-from config.ai.services.enhanced_ats_analyzer import EnhancedATSAnalyzerService
-from config.ai.services.suggestion_applier import SuggestionApplierService
-from config.ai.services.summary_generator import SummaryGeneratorService
-from config.ai.services.job_matcher import JobMatcherService
-from config.services.resume_service import ResumeService
 from api.serializers.ai import (
     ResumeAnalysisRequestSerializer,
     ResumeAnalysisResponseSerializer,
@@ -27,21 +24,102 @@ from api.auth.utils import get_supabase_user_id
 from api.throttles.ai import GuestAIRateLimiter, GuestThrottle
 from rest_framework.decorators import throttle_classes
 
+logger = logging.getLogger(__name__)
+
+# Lazy-loaded AI services (loaded only when AI endpoints are called)
+_ats_analyzer = None
+_enhanced_ats_analyzer = None
+_suggestion_applier = None
+_summary_generator = None
+_job_matcher = None
+_resume_service = None
+
+
+def _get_ats_analyzer():
+    """Lazy-load ATSAnalyzerService."""
+    global _ats_analyzer
+    if _ats_analyzer is None:
+        from config.ai.services.ats_analyzer import ATSAnalyzerService
+        _ats_analyzer = ATSAnalyzerService()
+    return _ats_analyzer
+
+
+def _get_enhanced_ats_analyzer():
+    """Lazy-load EnhancedATSAnalyzerService."""
+    global _enhanced_ats_analyzer
+    if _enhanced_ats_analyzer is None:
+        from config.ai.services.enhanced_ats_analyzer import EnhancedATSAnalyzerService
+        _enhanced_ats_analyzer = EnhancedATSAnalyzerService()
+    return _enhanced_ats_analyzer
+
+
+def _get_suggestion_applier():
+    """Lazy-load SuggestionApplierService."""
+    global _suggestion_applier
+    if _suggestion_applier is None:
+        from config.ai.services.suggestion_applier import SuggestionApplierService
+        _suggestion_applier = SuggestionApplierService()
+    return _suggestion_applier
+
+
+def _get_summary_generator():
+    """Lazy-load SummaryGeneratorService."""
+    global _summary_generator
+    if _summary_generator is None:
+        from config.ai.services.summary_generator import SummaryGeneratorService
+        _summary_generator = SummaryGeneratorService()
+    return _summary_generator
+
+
+def _get_job_matcher():
+    """Lazy-load JobMatcherService."""
+    global _job_matcher
+    if _job_matcher is None:
+        from config.ai.services.job_matcher import JobMatcherService
+        _job_matcher = JobMatcherService()
+    return _job_matcher
+
+
+def _get_resume_service():
+    """Lazy-load ResumeService."""
+    global _resume_service
+    if _resume_service is None:
+        from config.services.resume_service import ResumeService
+        _resume_service = ResumeService()
+    return _resume_service
+
 
 class AIViewSet(viewsets.ViewSet):
     """
     API endpoints for AI services.
+    
+    NOTE: All AI services are lazy-loaded to prevent memory issues during startup.
     """
     permission_classes = [IsAuthenticated]
     
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.ats_analyzer = ATSAnalyzerService()  # Fallback
-        self.enhanced_ats_analyzer = EnhancedATSAnalyzerService()
-        self.suggestion_applier = SuggestionApplierService()
-        self.summary_generator = SummaryGeneratorService()
-        self.job_matcher = JobMatcherService()
-        self.resume_service = ResumeService()
+    @property
+    def ats_analyzer(self):
+        return _get_ats_analyzer()
+    
+    @property
+    def enhanced_ats_analyzer(self):
+        return _get_enhanced_ats_analyzer()
+    
+    @property
+    def suggestion_applier(self):
+        return _get_suggestion_applier()
+    
+    @property
+    def summary_generator(self):
+        return _get_summary_generator()
+    
+    @property
+    def job_matcher(self):
+        return _get_job_matcher()
+    
+    @property
+    def resume_service(self):
+        return _get_resume_service()
     
     def _guest_rate_limit(self, request, feature: str):
         limiter = GuestAIRateLimiter(request)
