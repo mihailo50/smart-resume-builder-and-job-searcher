@@ -409,7 +409,7 @@
                             <div class="exp-company">{{ exp.company }}{% if exp.location %}{% if exp.company_ends_with_period %} – {% else %} • {% endif %}{{ exp.location }}{% endif %}</div>
                         </div>
                         <div class="exp-dates">
-                            {{ exp.start_date|date:"M Y" }} – {% if exp.is_current %}Present{% elif exp.end_date %}{{ exp.end_date|date:"M Y" }}{% endif %}
+                            {{ exp.start_date_formatted }} – {% if exp.is_current %}Present{% elif exp.end_date_formatted %}{{ exp.end_date_formatted }}{% endif %}
                         </div>
                     </div>
                     {% if exp.description %}
@@ -433,7 +433,7 @@
                     <div class="edu-degree">{{ edu.degree_display|default:edu.degree }}{% if edu.field_of_study %} in {{ edu.field_of_study }}{% endif %}</div>
                     <div class="edu-school">{{ edu.institution }}</div>
                     {% endif %}
-                    <div class="edu-dates">{% if edu.start_date %}{{ edu.start_date|date:"M Y" }} – {% endif %}{% if edu.is_current %}Present{% elif edu.end_date %}{{ edu.end_date|date:"M Y" }}{% else %}{% if edu.start_date %}Present{% endif %}{% endif %}</div>
+                    <div class="edu-dates">{% if edu.start_date_formatted %}{{ edu.start_date_formatted }} – {% endif %}{% if edu.is_current %}Present{% elif edu.end_date_formatted %}{{ edu.end_date_formatted }}{% else %}{% if edu.start_date_formatted %}Present{% endif %}{% endif %}</div>
                 </div>
                 {% endfor %}
             </section>
@@ -451,7 +451,7 @@
                             <div class="exp-title">{{ project.title|default:project.name }}</div>
                             {% if project.technologies %}<div class="exp-company" style="color:#64748b;">{{ project.technologies }}</div>{% endif %}
                         </div>
-                        {% if project.start_date %}<div class="exp-dates">{{ project.start_date|date:"M Y" }} – {% if project.end_date %}{{ project.end_date|date:"M Y" }}{% else %}Present{% endif %}</div>{% endif %}
+                        {% if project.start_date_formatted %}<div class="exp-dates">{{ project.start_date_formatted }} – {% if project.end_date_formatted %}{{ project.end_date_formatted }}{% else %}Present{% endif %}</div>{% endif %}
                     </div>
                     {% if project.description %}<div class="exp-desc">{% autoescape off %}{{ project.description|linebreaks }}{% endautoescape %}</div>{% endif %}
                 </div>
