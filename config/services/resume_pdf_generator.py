@@ -195,13 +195,26 @@ class PremiumResumePDFGenerator:
                 from datetime import datetime
                 # Try ISO format first (YYYY-MM-DD)
                 parsed = datetime.strptime(date_value[:10], '%Y-%m-%d').date()
-                logger.debug(f"_parse_date: parsed '{date_value}' -> {parsed}")
+                logger.info(f"_parse_date: SUCCESS parsed '{date_value}' -> {parsed}")
                 return parsed
             except (ValueError, TypeError) as e:
                 logger.warning(f"_parse_date: failed to parse '{date_value}': {e}")
                 return None
         logger.debug(f"_parse_date: unknown type {type(date_value)}: {date_value}")
         return None
+    
+    def _format_date(self, date_value) -> str:
+        """Format date as 'Mon YYYY' string for direct template use."""
+        if not date_value:
+            return ''
+        
+        # If it's a string, parse it first
+        if isinstance(date_value, str):
+            date_value = self._parse_date(date_value)
+        
+        if date_value and hasattr(date_value, 'strftime'):
+            return date_value.strftime('%b %Y')  # e.g., "Aug 2024"
+        return ''
     
     def _prepare_context(
         self,
@@ -325,13 +338,16 @@ class PremiumResumePDFGenerator:
                 exp['company_raw'] = company
                 # Add flag if company name ends with period (for template logic)
                 exp['company_ends_with_period'] = company.rstrip().endswith('.') if company else False
-                # Convert date strings to date objects for Django template filters
+                # Convert date strings to date objects AND pre-formatted strings
                 raw_start = exp.get('start_date')
                 raw_end = exp.get('end_date')
                 logger.info(f"Experience '{company}' raw dates: start='{raw_start}' ({type(raw_start).__name__}), end='{raw_end}' ({type(raw_end).__name__})")
                 exp['start_date'] = self._parse_date(raw_start)
                 exp['end_date'] = self._parse_date(raw_end)
-                logger.info(f"Experience '{company}' parsed dates: start={exp['start_date']}, end={exp['end_date']}")
+                # Pre-formatted dates for templates that have issues with date filter
+                exp['start_date_formatted'] = self._format_date(raw_start)
+                exp['end_date_formatted'] = self._format_date(raw_end)
+                logger.info(f"Experience '{company}' formatted dates: start='{exp['start_date_formatted']}', end='{exp['end_date_formatted']}'")
         
         # Sort education by start date (most recent first)
         educations_raw = resume_data.get('educations') or []
@@ -386,10 +402,15 @@ class PremiumResumePDFGenerator:
                     
                     edu['institution_display'] = inst_clean if inst_clean else institution
                 
-            # Convert date strings to date objects for Django template filters
+            # Convert date strings to date objects AND pre-formatted strings
             # This MUST be outside the is_high_school block to apply to ALL education entries
-            edu['start_date'] = self._parse_date(edu.get('start_date'))
-            edu['end_date'] = self._parse_date(edu.get('end_date'))
+            raw_start = edu.get('start_date')
+            raw_end = edu.get('end_date')
+            edu['start_date'] = self._parse_date(raw_start)
+            edu['end_date'] = self._parse_date(raw_end)
+            edu['start_date_formatted'] = self._format_date(raw_start)
+            edu['end_date_formatted'] = self._format_date(raw_end)
+            logger.info(f"Education '{edu.get('degree', '')}' formatted dates: start='{edu['start_date_formatted']}', end='{edu['end_date_formatted']}'")
         
         # Group skills by category
         skills_by_category = {}
@@ -436,9 +457,13 @@ class PremiumResumePDFGenerator:
             project = dict(p) if isinstance(p, dict) else {}
             project['name'] = project.get('title', project.get('name', ''))
             project_title = project['name'].lower() if project['name'] else ''
-            # Convert date strings to date objects
-            project['start_date'] = self._parse_date(project.get('start_date'))
-            project['end_date'] = self._parse_date(project.get('end_date'))
+            # Convert date strings to date objects AND pre-formatted strings
+            raw_start = project.get('start_date')
+            raw_end = project.get('end_date')
+            project['start_date'] = self._parse_date(raw_start)
+            project['end_date'] = self._parse_date(raw_end)
+            project['start_date_formatted'] = self._format_date(raw_start)
+            project['end_date_formatted'] = self._format_date(raw_end)
             
             # Check if this is a priority project
             is_priority = any(pn in project_title for pn in priority_names)
@@ -459,9 +484,13 @@ class PremiumResumePDFGenerator:
             # Ensure both name and title exist
             cert['name'] = cert.get('name') or cert.get('title', '')
             cert['title'] = cert.get('title') or cert.get('name', '')
-            # Convert date strings to date objects
-            cert['issue_date'] = self._parse_date(cert.get('issue_date'))
-            cert['expiry_date'] = self._parse_date(cert.get('expiry_date'))
+            # Convert date strings to date objects AND pre-formatted strings
+            raw_issue = cert.get('issue_date')
+            raw_expiry = cert.get('expiry_date')
+            cert['issue_date'] = self._parse_date(raw_issue)
+            cert['expiry_date'] = self._parse_date(raw_expiry)
+            cert['issue_date_formatted'] = self._format_date(raw_issue)
+            cert['expiry_date_formatted'] = self._format_date(raw_expiry)
             certifications_list.append(cert)
         
         languages_list = resume_data.get('languages') or []
