@@ -14,22 +14,35 @@ import base64
 
 logger = logging.getLogger(__name__)
 
-# Try to import WeasyPrint (preferred method)
-try:
-    from weasyprint import HTML, CSS
-    from weasyprint.text.fonts import FontConfiguration
-    WEASYPRINT_AVAILABLE = True
-except (ImportError, OSError) as e:
-    WEASYPRINT_AVAILABLE = False
-    logger.warning(f"WeasyPrint not available: {e}")
-    logger.warning("Falling back to reportlab. For WeasyPrint, install GTK runtime on Windows.")
+# Lazy-loaded WeasyPrint components (loaded only when PDF generation is needed)
+_weasyprint_html = None
+_weasyprint_css = None
+_weasyprint_font_config = None
+_weasyprint_checked = False
+_weasyprint_available = None
 
-# Try to import Playwright (fallback for complex gradients/icons)
-try:
-    from playwright.sync_api import sync_playwright
-    PLAYWRIGHT_AVAILABLE = False  # Disabled by default, enable when needed
-except ImportError:
-    PLAYWRIGHT_AVAILABLE = False
+def _ensure_weasyprint():
+    """Lazy-load WeasyPrint only when PDF generation is actually needed."""
+    global _weasyprint_html, _weasyprint_css, _weasyprint_font_config, _weasyprint_checked, _weasyprint_available
+    
+    if _weasyprint_checked:
+        return _weasyprint_available
+    
+    _weasyprint_checked = True
+    try:
+        from weasyprint import HTML, CSS
+        from weasyprint.text.fonts import FontConfiguration
+        _weasyprint_html = HTML
+        _weasyprint_css = CSS
+        _weasyprint_font_config = FontConfiguration
+        _weasyprint_available = True
+        logger.info("WeasyPrint loaded successfully for PDF generation")
+        return True
+    except (ImportError, OSError) as e:
+        _weasyprint_available = False
+        logger.warning(f"WeasyPrint not available: {e}")
+        logger.warning("PDF generation will fail. For WeasyPrint, install GTK runtime on Windows.")
+        return False
 
 # Try to import qrcode for QR code generation
 try:
@@ -82,9 +95,7 @@ class PremiumResumePDFGenerator:
         """Initialize the PDF generator."""
         self.template_dir = Path(settings.BASE_DIR) / 'templates' / 'resumes'
         self.static_dir = Path(settings.BASE_DIR) / 'static'
-        
-        if not WEASYPRINT_AVAILABLE:
-            logger.error("WeasyPrint is required for PDF generation. Install with: pip install weasyprint")
+        # WeasyPrint is now lazy-loaded, no check needed at init time
     
     def generate_pdf(
         self,
@@ -108,7 +119,8 @@ class PremiumResumePDFGenerator:
         Returns:
             Tuple of (pdf_bytes, html_preview)
         """
-        if not WEASYPRINT_AVAILABLE:
+        # Lazy-load WeasyPrint only when actually generating a PDF
+        if not _ensure_weasyprint():
             raise ImportError("WeasyPrint is required. Install with: pip install weasyprint")
         
         # Validate template
@@ -376,7 +388,8 @@ class PremiumResumePDFGenerator:
     
     def _generate_pdf_from_html(self, html_content: str, template_name: str) -> bytes:
         """Generate PDF from HTML using WeasyPrint - NO FALLBACK."""
-        if not WEASYPRINT_AVAILABLE:
+        # Ensure WeasyPrint is loaded (lazy import)
+        if not _ensure_weasyprint():
             raise ImportError(
                 "WeasyPrint is REQUIRED for styled PDF generation. "
                 "Install with: pip install weasyprint. "
@@ -390,13 +403,13 @@ class PremiumResumePDFGenerator:
         logger.info(f"Full HTML length: {len(html_content)} chars")
         
         try:
-            # Configure fonts
-            font_config = FontConfiguration()
+            # Configure fonts using lazy-loaded FontConfiguration
+            font_config = _weasyprint_font_config()
             
             # CRITICAL FIX: WeasyPrint needs base_url=None to resolve absolute URLs
             # But we also need to ensure CSS is processed
             # Try with None first (allows absolute URLs like https://fonts.googleapis.com)
-            html_doc = HTML(string=html_content, base_url=None)
+            html_doc = _weasyprint_html(string=html_content, base_url=None)
             
             logger.debug(f"=== WEASYPRINT GENERATION ===")
             logger.debug(f"HTML doc created, length: {len(html_content)}")
