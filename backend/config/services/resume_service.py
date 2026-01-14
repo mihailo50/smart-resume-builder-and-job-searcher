@@ -81,7 +81,7 @@ class ResumeService(BaseSupabaseService):
                 logger.error(f"Error fetching interests: {e}")
             resume['interests'] = []
         
-        # Fetch user profile data (contact info: phone, location, linkedin, github, portfolio)
+        # Fetch user profile data (contact info: email, phone, location, linkedin, github, portfolio)
         user_id = resume.get('user_id')
         if user_id:
             try:
@@ -91,25 +91,27 @@ class ResumeService(BaseSupabaseService):
                 
                 if user_profile:
                     # Map user_profile fields to resume fields for contact info
+                    # Email is now stored in user_profiles (preferred contact email)
+                    resume['email'] = user_profile.get('email', '')
                     resume['phone'] = user_profile.get('phone_number', '')
                     resume['location'] = user_profile.get('location', '')
                     resume['linkedin_url'] = user_profile.get('linkedin_url', '')
                     resume['github_url'] = user_profile.get('github_url', '')
                     resume['portfolio_url'] = user_profile.get('portfolio_url', '')
                     resume['user_profile'] = user_profile
-                    logger.debug(f"Fetched user profile for resume {resume_id}: phone={bool(resume.get('phone'))}, location={bool(resume.get('location'))}")
+                    logger.debug(f"Fetched user profile for resume {resume_id}: email={bool(resume.get('email'))}, phone={bool(resume.get('phone'))}, location={bool(resume.get('location'))}")
                 
-                # Also try to get email from Supabase auth
-                try:
-                    from config.supabase import get_supabase_client
-                    supabase = get_supabase_client()
-                    user_response = supabase.auth.admin.get_user_by_id(user_id)
-                    if user_response and user_response.user:
-                        resume['email'] = user_response.user.email or ''
-                        logger.debug(f"Fetched user email for resume {resume_id}: {bool(resume.get('email'))}")
-                except Exception as e:
-                    logger.warning(f"Could not fetch user email: {e}")
-                    resume['email'] = ''
+                # Fallback: if no email in profile, try to get from Supabase auth
+                if not resume.get('email'):
+                    try:
+                        from config.supabase import get_supabase_client
+                        supabase = get_supabase_client()
+                        user_response = supabase.auth.admin.get_user_by_id(user_id)
+                        if user_response and user_response.user:
+                            resume['email'] = user_response.user.email or ''
+                            logger.debug(f"Fetched auth email as fallback for resume {resume_id}: {bool(resume.get('email'))}")
+                    except Exception as e:
+                        logger.warning(f"Could not fetch user email from auth: {e}")
             except Exception as e:
                 logger.warning(f"Error fetching user profile for resume {resume_id}: {e}")
         

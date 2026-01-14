@@ -33,7 +33,8 @@ class UserProfileService(BaseSupabaseService):
         linkedin_url: Optional[str] = None,
         github_url: Optional[str] = None,
         portfolio_url: Optional[str] = None,
-        bio: Optional[str] = None
+        bio: Optional[str] = None,
+        email: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Create or update user profile.
@@ -47,6 +48,7 @@ class UserProfileService(BaseSupabaseService):
             github_url: Optional GitHub URL
             portfolio_url: Optional portfolio URL
             bio: Optional bio text
+            email: Optional contact email (may differ from auth email)
             
         Returns:
             Dict: Created or updated profile
@@ -69,6 +71,8 @@ class UserProfileService(BaseSupabaseService):
             data['portfolio_url'] = portfolio_url
         if bio is not None:
             data['bio'] = bio
+        if email is not None:
+            data['email'] = email
         
         if existing:
             return self.update(existing['id'], data)
