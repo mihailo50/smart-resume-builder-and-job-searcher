@@ -284,6 +284,8 @@ class ResumeViewSet(viewsets.ViewSet):
         }
         
         # Only include fields that were actually provided in the request
+        if 'email' in serializer.validated_data:
+            profile_update_kwargs['email'] = serializer.validated_data['email'] or None
         if 'phone' in serializer.validated_data:
             profile_update_kwargs['phone_number'] = serializer.validated_data['phone'] or None
         if 'location' in serializer.validated_data:
@@ -314,15 +316,15 @@ class ResumeViewSet(viewsets.ViewSet):
         else:
             updated_resume = resume
         
-        # Return complete personal info response
+        # Return complete personal info response (from saved profile data)
         response_data = {
             'full_name': updated_resume.get('title', ''),
-            'email': serializer.validated_data.get('email', ''),  # Echo back what was sent
-            'phone': updated_profile.get('phone_number', ''),
-            'location': updated_profile.get('location', ''),
-            'linkedin_url': updated_profile.get('linkedin_url', ''),
-            'github_url': updated_profile.get('github_url', ''),
-            'portfolio_url': updated_profile.get('portfolio_url', ''),
+            'email': updated_profile.get('email', '') or '',  # Now saved in user_profiles
+            'phone': updated_profile.get('phone_number', '') or '',
+            'location': updated_profile.get('location', '') or '',
+            'linkedin_url': updated_profile.get('linkedin_url', '') or '',
+            'github_url': updated_profile.get('github_url', '') or '',
+            'portfolio_url': updated_profile.get('portfolio_url', '') or '',
             'message': 'Personal info saved successfully',
         }
         
