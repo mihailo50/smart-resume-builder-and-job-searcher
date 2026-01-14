@@ -182,6 +182,21 @@ class PremiumResumePDFGenerator:
             logger.error(f"Error generating PDF: {e}")
             raise
     
+    def _parse_date(self, date_value) -> Optional[Any]:
+        """Convert date string to Python date object for Django template filters."""
+        if not date_value:
+            return None
+        if hasattr(date_value, 'strftime'):  # Already a date/datetime object
+            return date_value
+        if isinstance(date_value, str):
+            try:
+                from datetime import datetime
+                # Try ISO format first (YYYY-MM-DD)
+                return datetime.strptime(date_value[:10], '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                return None
+        return None
+    
     def _prepare_context(
         self,
         resume_data: Dict[str, Any],
@@ -250,7 +265,22 @@ class PremiumResumePDFGenerator:
         )
         
         # Log contact info for debugging
-        logger.info(f"Contact info - email: '{contact_email}', phone: '{contact_phone}', location: '{contact_location}'")
+        logger.info(f"Contact info - email: '{contact_email}', phone: '{contact_phone}', location: '{contact_location}', github: '{contact_github}'")
+        
+        # Extract display-friendly versions of URLs (e.g., "github.com/mihailo50" from full URL)
+        github_display = ''
+        if contact_github:
+            # Extract username from GitHub URL: https://github.com/username -> github.com/username
+            github_display = contact_github.replace('https://', '').replace('http://', '').rstrip('/')
+        
+        linkedin_display = ''
+        if contact_linkedin:
+            # Extract from LinkedIn URL: https://linkedin.com/in/username -> linkedin.com/in/username
+            linkedin_display = contact_linkedin.replace('https://', '').replace('http://', '').replace('www.', '').rstrip('/')
+        
+        portfolio_display = ''
+        if contact_portfolio:
+            portfolio_display = contact_portfolio.replace('https://', '').replace('http://', '').replace('www.', '').rstrip('/')
         
         contact_info = {
             'email': contact_email,
@@ -281,7 +311,7 @@ class PremiumResumePDFGenerator:
         else:
             experiences = []
         
-        # Fix double punctuation in company names (e.g., "Phuket d.o.o." + "." = "Phuket d.o.o..")
+        # Fix double punctuation in company names and convert dates
         for exp in experiences:
             if isinstance(exp, dict):
                 company = exp.get('company', '')
@@ -289,6 +319,9 @@ class PremiumResumePDFGenerator:
                 exp['company_raw'] = company
                 # Add flag if company name ends with period (for template logic)
                 exp['company_ends_with_period'] = company.rstrip().endswith('.') if company else False
+                # Convert date strings to date objects for Django template filters
+                exp['start_date'] = self._parse_date(exp.get('start_date'))
+                exp['end_date'] = self._parse_date(exp.get('end_date'))
         
         # Sort education by start date (most recent first)
         educations_raw = resume_data.get('educations') or []
@@ -342,6 +375,10 @@ class PremiumResumePDFGenerator:
                         inst_clean = institution[12:].strip() + ' High School'
                     
                     edu['institution_display'] = inst_clean if inst_clean else institution
+                
+                # Convert date strings to date objects for Django template filters
+                edu['start_date'] = self._parse_date(edu.get('start_date'))
+                edu['end_date'] = self._parse_date(edu.get('end_date'))
         
         # Group skills by category
         skills_by_category = {}
@@ -388,6 +425,9 @@ class PremiumResumePDFGenerator:
             project = dict(p) if isinstance(p, dict) else {}
             project['name'] = project.get('title', project.get('name', ''))
             project_title = project['name'].lower() if project['name'] else ''
+            # Convert date strings to date objects
+            project['start_date'] = self._parse_date(project.get('start_date'))
+            project['end_date'] = self._parse_date(project.get('end_date'))
             
             # Check if this is a priority project
             is_priority = any(pn in project_title for pn in priority_names)
@@ -408,6 +448,9 @@ class PremiumResumePDFGenerator:
             # Ensure both name and title exist
             cert['name'] = cert.get('name') or cert.get('title', '')
             cert['title'] = cert.get('title') or cert.get('name', '')
+            # Convert date strings to date objects
+            cert['issue_date'] = self._parse_date(cert.get('issue_date'))
+            cert['expiry_date'] = self._parse_date(cert.get('expiry_date'))
             certifications_list.append(cert)
         
         languages_list = resume_data.get('languages') or []
@@ -438,6 +481,10 @@ class PremiumResumePDFGenerator:
             'contact_linkedin': contact_linkedin,
             'contact_github': contact_github,
             'contact_portfolio': contact_portfolio,
+            # Display-friendly versions of URLs (without https://)
+            'github_display': github_display,
+            'linkedin_display': linkedin_display,
+            'portfolio_display': portfolio_display,
             'experiences': experiences,  # Already a list
             'educations': educations,  # Already a list
             'skills': skills_list,  # Guaranteed to be a list
