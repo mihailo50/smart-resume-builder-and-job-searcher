@@ -270,6 +270,59 @@ class AuthViewSet(viewsets.ViewSet):
             }, status=status.HTTP_200_OK)
     
     @extend_schema(
+        operation_id='refresh_token',
+        request={'type': 'object', 'properties': {'refresh_token': {'type': 'string'}}},
+        responses={200: TokenResponseSerializer},
+        tags=['Authentication']
+    )
+    @action(detail=False, methods=['post'], url_path='refresh')
+    def refresh(self, request):
+        """
+        Refresh access token using refresh token.
+        
+        POST /api/v1/auth/refresh/
+        """
+        refresh_token = request.data.get('refresh_token')
+        
+        if not refresh_token:
+            return Response(
+                {'error': 'Refresh token is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            supabase: Client = get_supabase_client()
+            
+            # Refresh the session using the refresh token
+            response = supabase.auth.refresh_session(refresh_token)
+            
+            if response.session:
+                session = response.session
+                
+                return Response({
+                    'access_token': session.access_token,
+                    'refresh_token': session.refresh_token,
+                    'expires_in': session.expires_in,
+                    'token_type': 'Bearer',
+                    'user': {
+                        'id': response.user.id if response.user else None,
+                        'email': response.user.email if response.user else None,
+                    }
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {'error': 'Failed to refresh token'},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+                
+        except Exception as e:
+            logger.warning(f"Token refresh failed: {e}")
+            return Response(
+                {'error': 'Invalid or expired refresh token'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+    
+    @extend_schema(
         operation_id='forgot_password',
         request=PasswordResetRequestSerializer,
         responses={200: {'message': 'Password reset email sent'}},
