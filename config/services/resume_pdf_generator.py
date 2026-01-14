@@ -376,9 +376,10 @@ class PremiumResumePDFGenerator:
                     
                     edu['institution_display'] = inst_clean if inst_clean else institution
                 
-                # Convert date strings to date objects for Django template filters
-                edu['start_date'] = self._parse_date(edu.get('start_date'))
-                edu['end_date'] = self._parse_date(edu.get('end_date'))
+            # Convert date strings to date objects for Django template filters
+            # This MUST be outside the is_high_school block to apply to ALL education entries
+            edu['start_date'] = self._parse_date(edu.get('start_date'))
+            edu['end_date'] = self._parse_date(edu.get('end_date'))
         
         # Group skills by category
         skills_by_category = {}
