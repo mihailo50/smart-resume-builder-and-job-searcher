@@ -219,13 +219,6 @@
             margin-bottom: 0.08rem;
         }
         
-        /* Title line with date on same row */
-        .exp-title-line {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-        }
-        
         .exp-title {
             font-weight: 700;
             font-size: 0.75rem;
@@ -254,13 +247,6 @@
         .exp-dates {
             color: #64748b;
             font-size: 0.65rem;
-            white-space: nowrap;
-        }
-        
-        .exp-dates-inline {
-            color: #64748b;
-            font-size: 0.6rem;
-            font-weight: 400;
             white-space: nowrap;
         }
         
@@ -470,10 +456,7 @@
                 {% if forloop.counter <= 3 %}
                 <div class="exp-item">
                     <div class="exp-header">
-                        <div class="exp-title-line">
-                            <span class="exp-title">{{ project.title|default:project.name }}</span>
-                            {% if project.date_range %}<span class="exp-dates-inline">{{ project.date_range }}</span>{% endif %}
-                        </div>
+                        <div class="exp-title">{{ project.title|default:project.name }}{% if project.date_range %} <span class="exp-separator">|</span> <span class="exp-dates">{{ project.date_range }}</span>{% endif %}</div>
                         {% if project.technologies_short %}<div class="exp-company" style="color:#64748b;">{{ project.technologies_short }}</div>{% endif %}
                     </div>
                     {% if project.description %}<div class="exp-desc">{% autoescape off %}{{ project.description|linebreaks }}{% endautoescape %}</div>{% endif %}
