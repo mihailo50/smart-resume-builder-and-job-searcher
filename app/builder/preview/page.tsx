@@ -21,6 +21,8 @@ interface ResumeData {
   full_name?: string;
   title?: string;
   summary?: string;
+  optimized_summary?: string;
+  professional_tagline?: string;
   email?: string;
   phone?: string;
   location?: string;
@@ -313,11 +315,13 @@ function PreviewContent() {
                         )}
                       </div>
 
-                      {/* Summary */}
-                      {resume.summary && (
+                      {/* Summary - use optimized_summary first, then fall back to summary */}
+                      {(resume.optimized_summary || resume.summary) && (
                         <div>
                           <h3 className="text-lg font-semibold mb-2">Summary</h3>
-                          <p className="text-sm text-muted-foreground whitespace-pre-line">{resume.summary}</p>
+                          <p className="text-sm text-muted-foreground whitespace-pre-line">
+                            {resume.optimized_summary || resume.summary}
+                          </p>
                         </div>
                       )}
 
