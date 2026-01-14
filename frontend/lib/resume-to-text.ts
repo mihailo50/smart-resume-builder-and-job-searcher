@@ -18,14 +18,15 @@ export function convertResumeToText(resume: GuestResumeData): string {
     if (p.github) sections.push(`GitHub: ${p.github}`);
   }
 
-  // Summary
-  if (resume.summary) {
-    if (resume.summary.professionalTagline) {
-      sections.push(`\nTagline: ${resume.summary.professionalTagline}`);
-    }
-    if (resume.summary.summary) {
-      sections.push(`\nSummary:\n${resume.summary.summary}`);
-    }
+  // Summary - use optimizedSummary first if available
+  const summaryText = resume.optimizedSummary || resume.summary?.summary || '';
+  const taglineText = resume.personal?.professionalTagline || resume.summary?.professionalTagline || '';
+  
+  if (taglineText) {
+    sections.push(`\nTagline: ${taglineText}`);
+  }
+  if (summaryText) {
+    sections.push(`\nSummary:\n${summaryText}`);
   }
 
   // Experience
