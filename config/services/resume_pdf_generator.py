@@ -185,16 +185,22 @@ class PremiumResumePDFGenerator:
     def _parse_date(self, date_value) -> Optional[Any]:
         """Convert date string to Python date object for Django template filters."""
         if not date_value:
+            logger.debug(f"_parse_date: empty value")
             return None
         if hasattr(date_value, 'strftime'):  # Already a date/datetime object
+            logger.debug(f"_parse_date: already a date object: {date_value}")
             return date_value
         if isinstance(date_value, str):
             try:
                 from datetime import datetime
                 # Try ISO format first (YYYY-MM-DD)
-                return datetime.strptime(date_value[:10], '%Y-%m-%d').date()
-            except (ValueError, TypeError):
+                parsed = datetime.strptime(date_value[:10], '%Y-%m-%d').date()
+                logger.debug(f"_parse_date: parsed '{date_value}' -> {parsed}")
+                return parsed
+            except (ValueError, TypeError) as e:
+                logger.warning(f"_parse_date: failed to parse '{date_value}': {e}")
                 return None
+        logger.debug(f"_parse_date: unknown type {type(date_value)}: {date_value}")
         return None
     
     def _prepare_context(
@@ -320,8 +326,12 @@ class PremiumResumePDFGenerator:
                 # Add flag if company name ends with period (for template logic)
                 exp['company_ends_with_period'] = company.rstrip().endswith('.') if company else False
                 # Convert date strings to date objects for Django template filters
-                exp['start_date'] = self._parse_date(exp.get('start_date'))
-                exp['end_date'] = self._parse_date(exp.get('end_date'))
+                raw_start = exp.get('start_date')
+                raw_end = exp.get('end_date')
+                logger.info(f"Experience '{company}' raw dates: start='{raw_start}' ({type(raw_start).__name__}), end='{raw_end}' ({type(raw_end).__name__})")
+                exp['start_date'] = self._parse_date(raw_start)
+                exp['end_date'] = self._parse_date(raw_end)
+                logger.info(f"Experience '{company}' parsed dates: start={exp['start_date']}, end={exp['end_date']}")
         
         # Sort education by start date (most recent first)
         educations_raw = resume_data.get('educations') or []
