@@ -214,9 +214,6 @@
         }
         
         .exp-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
             margin-bottom: 0.08rem;
         }
         
@@ -226,15 +223,28 @@
             color: #1a1a1a;
         }
         
+        .exp-company-line {
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 0.15rem;
+        }
+        
         .exp-company {
             color: #14b8a6;
             font-weight: 600;
             font-size: 0.7rem;
         }
         
+        .exp-separator {
+            color: #94a3b8;
+            font-size: 0.65rem;
+            margin: 0 0.2rem;
+        }
+        
         .exp-dates {
             color: #64748b;
-            font-size: 0.6rem;
+            font-size: 0.65rem;
             white-space: nowrap;
         }
         
@@ -348,7 +358,7 @@
             <div class="sidebar-section">
                 <h3 class="sidebar-title">Skills</h3>
                 {% for skill in skills %}
-                <div class="sidebar-list-item">{{ skill.name }}{% if skill.level %} ({{ skill.level }}){% endif %}</div>
+                <div class="sidebar-list-item">{{ skill.name }}</div>
                 {% endfor %}
             </div>
             {% endif %}
@@ -404,12 +414,10 @@
                 {% for exp in experiences %}
                 <div class="exp-item">
                     <div class="exp-header">
-                        <div>
-                            <div class="exp-title">{{ exp.position }}</div>
-                            <div class="exp-company">{{ exp.company }}{% if exp.location %}{% if exp.company_ends_with_period %} – {% else %} • {% endif %}{{ exp.location }}{% endif %}</div>
-                        </div>
-                        <div class="exp-dates">
-                            {{ exp.start_date_formatted }} – {% if exp.is_current %}Present{% elif exp.end_date_formatted %}{{ exp.end_date_formatted }}{% endif %}
+                        <div class="exp-title">{{ exp.position }}</div>
+                        <div class="exp-company-line">
+                            <span class="exp-company">{{ exp.company }}{% if exp.location %}{% if exp.company_ends_with_period %} – {% else %}, {% endif %}{{ exp.location }}{% endif %}</span>
+                            {% if exp.date_range %}<span class="exp-separator">|</span><span class="exp-dates">{{ exp.date_range }}</span>{% endif %}
                         </div>
                     </div>
                     {% if exp.description %}
@@ -428,12 +436,11 @@
                 <div class="edu-item">
                     {% if edu.is_high_school %}
                     <div class="edu-degree">{{ edu.degree_display|default:"High School Diploma" }}</div>
-                    <div class="edu-school">{{ edu.institution_display|default:edu.institution }}</div>
+                    <div class="edu-school">{{ edu.institution_display|default:edu.institution }}{% if edu.date_range %} <span class="exp-separator">|</span> <span class="edu-dates">{{ edu.date_range }}</span>{% endif %}</div>
                     {% else %}
-                    <div class="edu-degree">{{ edu.degree_display|default:edu.degree }}{% if edu.field_of_study %} in {{ edu.field_of_study }}{% endif %}</div>
-                    <div class="edu-school">{{ edu.institution }}</div>
+                    <div class="edu-degree">{{ edu.degree_display|default:edu.degree }}</div>
+                    <div class="edu-school">{{ edu.institution }}{% if edu.date_range %} <span class="exp-separator">|</span> <span class="edu-dates">{{ edu.date_range }}</span>{% endif %}</div>
                     {% endif %}
-                    <div class="edu-dates">{% if edu.start_date_formatted %}{{ edu.start_date_formatted }} – {% endif %}{% if edu.is_current %}Present{% elif edu.end_date_formatted %}{{ edu.end_date_formatted }}{% else %}{% if edu.start_date_formatted %}Present{% endif %}{% endif %}</div>
                 </div>
                 {% endfor %}
             </section>
@@ -447,11 +454,11 @@
                 {% if forloop.counter <= 3 %}
                 <div class="exp-item">
                     <div class="exp-header">
-                        <div>
-                            <div class="exp-title">{{ project.title|default:project.name }}</div>
-                            {% if project.technologies %}<div class="exp-company" style="color:#64748b;">{{ project.technologies }}</div>{% endif %}
+                        <div class="exp-title">{{ project.title|default:project.name }}</div>
+                        <div class="exp-company-line">
+                            {% if project.technologies %}<span class="exp-company" style="color:#64748b;">{{ project.technologies }}</span>{% endif %}
+                            {% if project.date_range %}<span class="exp-separator">|</span><span class="exp-dates">{{ project.date_range }}</span>{% endif %}
                         </div>
-                        {% if project.start_date_formatted %}<div class="exp-dates">{{ project.start_date_formatted }} – {% if project.end_date_formatted %}{{ project.end_date_formatted }}{% else %}Present{% endif %}</div>{% endif %}
                     </div>
                     {% if project.description %}<div class="exp-desc">{% autoescape off %}{{ project.description|linebreaks }}{% endautoescape %}</div>{% endif %}
                 </div>
