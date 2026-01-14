@@ -223,7 +223,9 @@ class PremiumResumePDFGenerator:
         )
         contact_phone = (
             resume_data.get('phone') or 
+            user_profile.get('phone_number') or  # user_profiles table uses phone_number
             user_profile.get('phone') or 
+            resume_data.get('user_profile', {}).get('phone_number', '') or
             resume_data.get('user_profile', {}).get('phone', '')
         )
         contact_location = (

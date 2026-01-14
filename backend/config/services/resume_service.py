@@ -31,7 +31,8 @@ class ResumeService(BaseSupabaseService):
     
     def get_resume_with_details(self, resume_id: str) -> Optional[Dict[str, Any]]:
         """
-        Get resume with all related data (experiences, educations, skills, etc.).
+        Get resume with all related data (experiences, educations, skills, etc.)
+        AND user profile data (contact info).
         
         Args:
             resume_id: Resume ID
@@ -80,6 +81,38 @@ class ResumeService(BaseSupabaseService):
                 logger.error(f"Error fetching interests: {e}")
             resume['interests'] = []
         
+        # Fetch user profile data (contact info: phone, location, linkedin, github, portfolio)
+        user_id = resume.get('user_id')
+        if user_id:
+            try:
+                from config.services.user_service import UserProfileService
+                profile_service = UserProfileService()
+                user_profile = profile_service.get_user_profile(user_id)
+                
+                if user_profile:
+                    # Map user_profile fields to resume fields for contact info
+                    resume['phone'] = user_profile.get('phone_number', '')
+                    resume['location'] = user_profile.get('location', '')
+                    resume['linkedin_url'] = user_profile.get('linkedin_url', '')
+                    resume['github_url'] = user_profile.get('github_url', '')
+                    resume['portfolio_url'] = user_profile.get('portfolio_url', '')
+                    resume['user_profile'] = user_profile
+                    logger.debug(f"Fetched user profile for resume {resume_id}: phone={bool(resume.get('phone'))}, location={bool(resume.get('location'))}")
+                
+                # Also try to get email from Supabase auth
+                try:
+                    from config.supabase import get_supabase_client
+                    supabase = get_supabase_client()
+                    user_response = supabase.auth.admin.get_user_by_id(user_id)
+                    if user_response and user_response.user:
+                        resume['email'] = user_response.user.email or ''
+                        logger.debug(f"Fetched user email for resume {resume_id}: {bool(resume.get('email'))}")
+                except Exception as e:
+                    logger.warning(f"Could not fetch user email: {e}")
+                    resume['email'] = ''
+            except Exception as e:
+                logger.warning(f"Error fetching user profile for resume {resume_id}: {e}")
+        
         logger.info(
             f"Resume {resume_id} data summary: "
             f"experiences={len(resume.get('experiences', []))}, "
@@ -88,7 +121,8 @@ class ResumeService(BaseSupabaseService):
             f"certifications={len(resume.get('certifications', []))}, "
             f"skills={len(resume.get('skills', []))}, "
             f"languages={len(resume.get('languages', []))}, "
-            f"interests={len(resume.get('interests', []))}"
+            f"interests={len(resume.get('interests', []))}, "
+            f"has_contact_info={bool(resume.get('email') or resume.get('phone') or resume.get('location'))}"
         )
         return resume
 
