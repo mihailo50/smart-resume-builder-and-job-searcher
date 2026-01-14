@@ -224,7 +224,7 @@ class ResumeViewSet(viewsets.ViewSet):
     @extend_schema(
         operation_id='update_personal_info',
         request=PersonalInfoSerializer,
-        responses={200: ResumeSerializer},
+        responses={200: PersonalInfoSerializer},
         tags=['Resumes']
     )
     @action(detail=True, methods=['put'], url_path='personal')
@@ -233,7 +233,15 @@ class ResumeViewSet(viewsets.ViewSet):
         Update personal information for a resume.
         
         PUT /api/v1/resumes/{id}/personal/
+        
+        Personal info is stored in two places:
+        - full_name -> resumes.title
+        - email, phone, location, linkedin_url, github_url, portfolio_url -> user_profiles
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"[PERSONAL INFO] Request received - pk: {pk}, data: {request.data}")
+        
         supabase_user_id = get_supabase_user_id(request)
         if not supabase_user_id:
             return Response(
@@ -260,46 +268,66 @@ class ResumeViewSet(viewsets.ViewSet):
         serializer = PersonalInfoSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        # Update resume with personal info
+        # Update resume with full_name -> title
         update_data = {}
-        if 'full_name' in serializer.validated_data:
+        if serializer.validated_data.get('full_name'):
             update_data['title'] = serializer.validated_data['full_name']
         
         # Update user profile with personal info (phone, location, linkedin, github, portfolio)
-        # Note: email is in auth.users, not user_profiles
+        # Note: email is in auth.users, not user_profiles - we store it anyway for reference
         from config.services.user_service import UserProfileService
         profile_service = UserProfileService()
         
-        # Filter out empty strings and None values before updating profile
-        profile_data = {}
-        if serializer.validated_data.get('phone'):
-            profile_data['phone_number'] = serializer.validated_data['phone']
-        if serializer.validated_data.get('location'):
-            profile_data['location'] = serializer.validated_data['location']
-        if serializer.validated_data.get('linkedin_url'):
-            profile_data['linkedin_url'] = serializer.validated_data['linkedin_url']
-        if serializer.validated_data.get('github_url'):
-            profile_data['github_url'] = serializer.validated_data['github_url']
-        if serializer.validated_data.get('portfolio_url'):
-            profile_data['portfolio_url'] = serializer.validated_data['portfolio_url']
+        # Collect all profile data (including empty strings to allow clearing values)
+        profile_update_kwargs = {
+            'user_id': supabase_user_id,
+        }
         
-        # Update or create user profile with available data (only non-empty values)
-        if profile_data:
-            profile_service.create_or_update_profile(
-                user_id=supabase_user_id,
-                phone_number=profile_data.get('phone_number'),
-                location=profile_data.get('location'),
-                linkedin_url=profile_data.get('linkedin_url'),
-                github_url=profile_data.get('github_url'),
-                portfolio_url=profile_data.get('portfolio_url'),
+        # Only include fields that were actually provided in the request
+        if 'phone' in serializer.validated_data:
+            profile_update_kwargs['phone_number'] = serializer.validated_data['phone'] or None
+        if 'location' in serializer.validated_data:
+            profile_update_kwargs['location'] = serializer.validated_data['location'] or None
+        if 'linkedin_url' in serializer.validated_data:
+            profile_update_kwargs['linkedin_url'] = serializer.validated_data['linkedin_url'] or None
+        if 'github_url' in serializer.validated_data:
+            profile_update_kwargs['github_url'] = serializer.validated_data['github_url'] or None
+        if 'portfolio_url' in serializer.validated_data:
+            profile_update_kwargs['portfolio_url'] = serializer.validated_data['portfolio_url'] or None
+        
+        # Update or create user profile
+        logger.info(f"[PERSONAL INFO] Updating user profile with: {profile_update_kwargs}")
+        try:
+            updated_profile = profile_service.create_or_update_profile(**profile_update_kwargs)
+            logger.info(f"[PERSONAL INFO] User profile updated: {updated_profile}")
+        except Exception as e:
+            logger.error(f"[PERSONAL INFO] Error updating user profile: {e}")
+            return Response(
+                {'error': f'Failed to update profile: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
+        # Update resume if needed
         if update_data:
             updated_resume = service.update(pk, update_data)
-            response_serializer = ResumeSerializer(updated_resume)
-            return Response(response_serializer.data, status=status.HTTP_200_OK)
+            logger.info(f"[PERSONAL INFO] Resume updated with: {update_data}")
+        else:
+            updated_resume = resume
         
-        return Response(ResumeSerializer(resume).data, status=status.HTTP_200_OK)
+        # Return complete personal info response
+        response_data = {
+            'full_name': updated_resume.get('title', ''),
+            'email': serializer.validated_data.get('email', ''),  # Echo back what was sent
+            'phone': updated_profile.get('phone_number', ''),
+            'location': updated_profile.get('location', ''),
+            'linkedin_url': updated_profile.get('linkedin_url', ''),
+            'github_url': updated_profile.get('github_url', ''),
+            'portfolio_url': updated_profile.get('portfolio_url', ''),
+            'message': 'Personal info saved successfully',
+        }
+        
+        logger.info(f"[PERSONAL INFO] Returning response: {response_data}")
+        return Response(response_data, status=status.HTTP_200_OK)
     
     @extend_schema(
         operation_id='update_professional_tagline',
