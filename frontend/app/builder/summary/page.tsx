@@ -143,7 +143,7 @@ function SummaryContent() {
       const response = await api.post<{
         enhanced_summary: string;
         tone: string;
-      }>('v1/ai/enhance-summary/', {
+      }>('/v1/ai/enhance-summary/', {
         summary_text: summary,
         resume_data: resumeDataForContext,
         tone: 'professional',
