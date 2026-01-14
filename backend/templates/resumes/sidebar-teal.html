@@ -305,6 +305,14 @@
                     </svg>
                     <span>{{ contact.email|truncatechars:30 }}</span>
                 </div>
+                {% elif resume.email %}
+                <div class="contact-item">
+                    <svg class="contact-icon" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+                    </svg>
+                    <span>{{ resume.email|truncatechars:30 }}</span>
+                </div>
                 {% endif %}
                 {% if contact.phone %}
                 <div class="contact-item">
@@ -313,6 +321,13 @@
                     </svg>
                     <span>{{ contact.phone }}</span>
                 </div>
+                {% elif resume.phone %}
+                <div class="contact-item">
+                    <svg class="contact-icon" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
+                    </svg>
+                    <span>{{ resume.phone }}</span>
+                </div>
                 {% endif %}
                 {% if contact.location %}
                 <div class="contact-item">
@@ -320,6 +335,18 @@
                         <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                     </svg>
                     <span>{{ contact.location|truncatechars:30 }}</span>
+                </div>
+                {% elif resume.location %}
+                <div class="contact-item">
+                    <svg class="contact-icon" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>{{ resume.location|truncatechars:30 }}</span>
+                </div>
+                {% endif %}
+                {% if not contact.email and not contact.phone and not contact.location and not resume.email and not resume.phone and not resume.location %}
+                <div class="contact-item" style="opacity: 0.7;">
+                    <span>No contact info provided</span>
                 </div>
                 {% endif %}
                 {% if contact.linkedin %}
@@ -370,7 +397,7 @@
                     <div class="exp-header">
                         <div>
                             <div class="exp-title">{{ exp.position }}</div>
-                            <div class="exp-company">{{ exp.company }}{% if exp.location %} • {{ exp.location }}{% endif %}</div>
+                            <div class="exp-company">{{ exp.company }}{% if exp.location %}{% if exp.company_ends_with_period %} – {% else %} • {% endif %}{{ exp.location }}{% endif %}</div>
                         </div>
                         <div class="exp-dates">
                             {{ exp.start_date|date:"M Y" }} – {% if exp.is_current %}Present{% elif exp.end_date %}{{ exp.end_date|date:"M Y" }}{% endif %}
@@ -394,8 +421,17 @@
                 <h2 class="section-title">Education</h2>
                 {% for edu in educations %}
                 <div class="education-item">
+                    {% if edu.is_high_school %}
+                    <!-- High School: Institution on top, degree/program below -->
+                    <div class="edu-institution" style="font-weight: 700; color: #1a1a1a;">{{ edu.institution }}</div>
+                    {% if edu.degree %}
+                    <div class="edu-degree" style="font-weight: 600; color: #14b8a6; font-size: 0.8rem;">{{ edu.degree }}{% if edu.field_of_study %} – {{ edu.field_of_study }}{% endif %}</div>
+                    {% endif %}
+                    {% else %}
+                    <!-- Regular Education: Degree first, then institution -->
                     <div class="edu-degree">{{ edu.degree }}{% if edu.field_of_study %} in {{ edu.field_of_study }}{% endif %}</div>
                     <div class="edu-institution">{{ edu.institution }}</div>
+                    {% endif %}
                     <div style="color: #64748b; font-size: 0.7rem; margin-top: 0.1rem;">
                         {{ edu.start_date|date:"M Y" }} – {% if edu.is_current %}Present{% elif edu.end_date %}{{ edu.end_date|date:"M Y" }}{% endif %}
                     </div>
