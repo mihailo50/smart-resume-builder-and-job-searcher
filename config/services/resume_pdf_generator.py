@@ -273,13 +273,39 @@ class PremiumResumePDFGenerator:
                 
                 # Fix specific degree: "Python Developer in Python programming language" -> "Certified Python Developer"
                 if degree and 'python developer' in degree.lower() and 'python programming language' in degree.lower():
-                    edu['degree'] = 'Certified Python Developer'
+                    edu['degree_display'] = 'Certified Python Developer'
                     edu['degree_cleaned'] = True
+                else:
+                    edu['degree_display'] = degree
                 
                 # Check if this is a High School entry for special formatting
-                is_high_school = any(term in (degree + ' ' + institution).lower() for term in 
-                    ['high school', 'secondary school', 'gymnasium', 'srednja škola', 'gimnazija'])
+                combined_text = (degree + ' ' + institution).lower()
+                is_high_school = any(term in combined_text for term in 
+                    ['high school', 'secondary school', 'gymnasium', 'srednja škola', 'gimnazija', 
+                     'general education', 'high school general'])
                 edu['is_high_school'] = is_high_school
+                
+                # Clean up High School entries: "High School General - Vuk Karadzic" -> separate degree/institution
+                if is_high_school:
+                    # Set a clean degree name
+                    if 'general' in degree.lower() or not degree or degree.lower() == institution.lower():
+                        edu['degree_display'] = 'High School Diploma'
+                    elif 'gymnasium' in degree.lower() or 'gimnazija' in degree.lower():
+                        edu['degree_display'] = 'Gymnasium Diploma'
+                    else:
+                        edu['degree_display'] = degree
+                    
+                    # Clean up institution name (remove "High School" prefix if redundant)
+                    inst_clean = institution
+                    if ' - ' in institution:
+                        # Handle "High School General - Vuk Karadzic" format
+                        parts = institution.split(' - ')
+                        if len(parts) == 2:
+                            inst_clean = parts[1].strip() + ' High School'
+                    elif institution.lower().startswith('high school '):
+                        inst_clean = institution[12:].strip() + ' High School'
+                    
+                    edu['institution_display'] = inst_clean if inst_clean else institution
         
         # Group skills by category
         skills_by_category = {}
@@ -313,12 +339,30 @@ class PremiumResumePDFGenerator:
         skills_list = resume_data.get('skills') or []
         
         # Fix project objects - add 'name' field from 'title' for template compatibility
+        # Also prioritize specific projects: Holograph, Translatr, Smart Resume Builder
         projects_raw = resume_data.get('projects') or []
         projects_list = []
+        priority_projects = []
+        other_projects = []
+        
+        # Priority project names (case-insensitive partial match)
+        priority_names = ['holograph', 'translatr', 'smart resume', 'resume builder']
+        
         for p in projects_raw:
             project = dict(p) if isinstance(p, dict) else {}
             project['name'] = project.get('title', project.get('name', ''))
-            projects_list.append(project)
+            project_title = project['name'].lower() if project['name'] else ''
+            
+            # Check if this is a priority project
+            is_priority = any(pn in project_title for pn in priority_names)
+            
+            if is_priority:
+                priority_projects.append(project)
+            else:
+                other_projects.append(project)
+        
+        # Combine: priority projects first, then others
+        projects_list = priority_projects + other_projects
         
         # Fix certification objects - add both 'name' and 'title' fields for template compatibility
         certs_raw = resume_data.get('certifications') or []
