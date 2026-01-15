@@ -9,6 +9,7 @@ export interface GuestResumeData {
     phone?: string;
     location?: string;
     dateOfBirth?: string;
+    avatarUrl?: string;
     linkedin?: string;
     github?: string;
     portfolio?: string;
@@ -209,6 +210,7 @@ export function guestResumeToApiFormat(): any {
       phone: guestData.personal.phone,
       location: guestData.personal.location,
       date_of_birth: guestData.personal.dateOfBirth,
+      avatar_url: guestData.personal.avatarUrl,
       linkedin_url: guestData.personal.linkedin,
       github_url: guestData.personal.github,
       portfolio_url: guestData.personal.portfolio,

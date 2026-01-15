@@ -33,6 +33,7 @@ const personalSchema = z.object({
   phone: z.string().min(10, 'Invalid phone number'),
   location: z.string().optional(),
   dateOfBirth: z.string().optional(),
+  avatarUrl: z.string().url('Invalid URL').optional().or(z.literal('')),
   linkedin: z.string().url('Invalid URL').optional().or(z.literal('')),
   github: z.string().url('Invalid URL').optional().or(z.literal('')),
   portfolio: z.string().url('Invalid URL').optional().or(z.literal('')),
@@ -65,6 +66,7 @@ function PersonalInfoContent() {
       phone: '',
       location: '',
       dateOfBirth: '',
+      avatarUrl: '',
       linkedin: '',
       github: '',
       portfolio: '',
@@ -130,6 +132,7 @@ function PersonalInfoContent() {
             phone: profile.phone_number || '',
             location: profile.location || '',
             dateOfBirth: profile.date_of_birth || '',
+            avatarUrl: profile.avatar || '',
             linkedin: profile.linkedin_url || '',
             github: profile.github_url || '',
             portfolio: profile.portfolio_url || '',
@@ -160,6 +163,7 @@ function PersonalInfoContent() {
           phone: guestData.personal.phone || '',
           location: guestData.personal.location || '',
           dateOfBirth: guestData.personal.dateOfBirth || '',
+          avatarUrl: guestData.personal.avatarUrl || '',
           linkedin: guestData.personal.linkedin || '',
           github: guestData.personal.github || '',
           portfolio: guestData.personal.portfolio || '',
@@ -195,6 +199,7 @@ function PersonalInfoContent() {
           phone: data.phone,
           location: data.location || '',
           date_of_birth: data.dateOfBirth || null,
+          avatar_url: data.avatarUrl || '',
           linkedin_url: data.linkedin || '',
           github_url: data.github || '',
           portfolio_url: data.portfolio || '',
@@ -212,6 +217,7 @@ function PersonalInfoContent() {
             phone: data.phone,
             location: data.location || '',
             dateOfBirth: data.dateOfBirth || '',
+            avatarUrl: data.avatarUrl || '',
             linkedin: data.linkedin || '',
             github: data.github || '',
             portfolio: data.portfolio || '',
@@ -385,6 +391,22 @@ function PersonalInfoContent() {
                             type="date"
                             {...register('dateOfBirth')}
                           />
+                        </div>
+
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="avatarUrl">Profile Photo URL</Label>
+                          <Input
+                            id="avatarUrl"
+                            type="url"
+                            placeholder="https://example.com/your-photo.jpg"
+                            {...register('avatarUrl')}
+                          />
+                          {errors.avatarUrl && (
+                            <p className="text-sm text-destructive">{errors.avatarUrl.message}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            Paste a URL to your profile photo (e.g., from LinkedIn, GitHub, or any image hosting service)
+                          </p>
                         </div>
 
                         <div className="space-y-2">
