@@ -350,6 +350,29 @@ class PremiumResumePDFGenerator:
         logger.debug(f"Title: '{title}'")
         logger.debug(f"Summary: '{summary_text[:100] if summary_text else 'EMPTY'}...'")
         
+        # Extract display-friendly versions of URLs
+        linkedin_url = contact_info.get('linkedin', '')
+        github_url = contact_info.get('github', '')
+        linkedin_display = ''
+        github_display = ''
+        
+        if linkedin_url:
+            # Extract linkedin.com/in/username from full URL
+            if 'linkedin.com/in/' in linkedin_url:
+                linkedin_display = 'linkedin.com/in/' + linkedin_url.split('linkedin.com/in/')[-1].rstrip('/')
+            else:
+                linkedin_display = linkedin_url
+        
+        if github_url:
+            # Extract github.com/username from full URL
+            if 'github.com/' in github_url:
+                github_display = 'github.com/' + github_url.split('github.com/')[-1].rstrip('/')
+            else:
+                github_display = github_url
+        
+        # Get date of birth
+        date_of_birth = resume_data.get('date_of_birth') or user_profile.get('date_of_birth', '')
+        
         context = {
             'resume': resume_data,  # Include full resume data for template access
             'full_name': full_name,
@@ -357,6 +380,16 @@ class PremiumResumePDFGenerator:
             'professional_tagline': resume_data.get('professional_tagline', ''),
             'summary': summary_text,
             'contact': contact_info,
+            # Individual contact variables for direct template access
+            'contact_email': contact_info.get('email', ''),
+            'contact_phone': contact_info.get('phone', ''),
+            'contact_location': contact_info.get('location', ''),
+            'contact_linkedin': contact_info.get('linkedin', ''),
+            'contact_github': contact_info.get('github', ''),
+            'contact_portfolio': contact_info.get('portfolio', ''),
+            'linkedin_display': linkedin_display,
+            'github_display': github_display,
+            'date_of_birth': date_of_birth,
             'experiences': experiences,  # Already a list
             'educations': educations,  # Already a list
             'skills': skills_list,  # Guaranteed to be a list
