@@ -296,6 +296,9 @@ class ResumeViewSet(viewsets.ViewSet):
             profile_update_kwargs['github_url'] = serializer.validated_data['github_url'] or None
         if 'portfolio_url' in serializer.validated_data:
             profile_update_kwargs['portfolio_url'] = serializer.validated_data['portfolio_url'] or None
+        if 'date_of_birth' in serializer.validated_data:
+            dob = serializer.validated_data['date_of_birth']
+            profile_update_kwargs['date_of_birth'] = str(dob) if dob else None
         
         # Update or create user profile
         logger.info(f"[PERSONAL INFO] Updating user profile with: {profile_update_kwargs}")
@@ -325,6 +328,7 @@ class ResumeViewSet(viewsets.ViewSet):
             'linkedin_url': updated_profile.get('linkedin_url', '') or '',
             'github_url': updated_profile.get('github_url', '') or '',
             'portfolio_url': updated_profile.get('portfolio_url', '') or '',
+            'date_of_birth': updated_profile.get('date_of_birth', '') or '',
             'message': 'Personal info saved successfully',
         }
         
@@ -578,7 +582,8 @@ class ResumeViewSet(viewsets.ViewSet):
         template_name = params.get('template') or resume.get('last_template') or 'modern-indigo'
         font_combination = params.get('font') or resume.get('last_font') or 'modern'
         ats_mode = params.get('ats_mode', False)
-        photo_url = params.get('photo_url')
+        # Use photo_url from params, or fallback to avatar from user profile
+        photo_url = params.get('photo_url') or resume.get('avatar_url') or resume.get('user_profile', {}).get('avatar')
         
         # Log what we're getting from database
         logger.info(
@@ -614,6 +619,9 @@ class ResumeViewSet(viewsets.ViewSet):
         if experiences_for_pdf:
             logger.info(f"First experience dates: start_date={experiences_for_pdf[0].get('start_date')}, end_date={experiences_for_pdf[0].get('end_date')}")
         
+        # Get user_profile from resume data
+        user_profile = resume.get('user_profile', {})
+        
         # Prepare COMPLETE resume data for PDF generation - NO DATA STRIPPING
         resume_data = {
             'id': str(resume.get('id', '')),
@@ -622,13 +630,15 @@ class ResumeViewSet(viewsets.ViewSet):
             'professional_tagline': resume.get('professional_tagline', ''),
             'summary': resume.get('summary', ''),
             'optimized_summary': resume.get('optimized_summary', ''),
-            'email': personal_info.get('email') or resume.get('email', ''),
-            'phone': personal_info.get('phone') or resume.get('phone', ''),
-            'location': personal_info.get('location') or resume.get('location', ''),
-            'linkedin_url': personal_info.get('linkedin_url') or resume.get('linkedin_url', ''),
-            'github_url': personal_info.get('github_url') or resume.get('github_url', ''),
-            'portfolio_url': personal_info.get('portfolio_url') or resume.get('portfolio_url', ''),
+            'email': personal_info.get('email') or resume.get('email', '') or user_profile.get('email', ''),
+            'phone': personal_info.get('phone') or resume.get('phone', '') or user_profile.get('phone_number', ''),
+            'location': personal_info.get('location') or resume.get('location', '') or user_profile.get('location', ''),
+            'linkedin_url': personal_info.get('linkedin_url') or resume.get('linkedin_url', '') or user_profile.get('linkedin_url', ''),
+            'github_url': personal_info.get('github_url') or resume.get('github_url', '') or user_profile.get('github_url', ''),
+            'portfolio_url': personal_info.get('portfolio_url') or resume.get('portfolio_url', '') or user_profile.get('portfolio_url', ''),
+            'date_of_birth': resume.get('date_of_birth', '') or user_profile.get('date_of_birth', ''),
             'personal_info': personal_info,
+            'user_profile': user_profile,  # Pass user_profile for PDF generator
             # Pass ALL data - ensure lists are never None
             'experiences': resume.get('experiences') or [],
             'educations': resume.get('educations') or [],
@@ -645,6 +655,10 @@ class ResumeViewSet(viewsets.ViewSet):
             f"full_name: '{resume_data['full_name']}', "
             f"title: '{resume_data['title']}', "
             f"professional_tagline: '{resume_data['professional_tagline']}', "
+            f"email: '{resume_data['email']}', "
+            f"phone: '{resume_data['phone']}', "
+            f"location: '{resume_data['location']}', "
+            f"photo_url: '{photo_url}', "
             f"experiences: {len(resume_data['experiences'])}, "
             f"projects: {len(resume_data['projects'])}, "
             f"skills: {len(resume_data['skills'])}, "

@@ -32,6 +32,7 @@ const personalSchema = z.object({
   email: z.string().email('Invalid email address'),
   phone: z.string().min(10, 'Invalid phone number'),
   location: z.string().optional(),
+  dateOfBirth: z.string().optional(),
   linkedin: z.string().url('Invalid URL').optional().or(z.literal('')),
   github: z.string().url('Invalid URL').optional().or(z.literal('')),
   portfolio: z.string().url('Invalid URL').optional().or(z.literal('')),
@@ -63,6 +64,7 @@ function PersonalInfoContent() {
       email: '',
       phone: '',
       location: '',
+      dateOfBirth: '',
       linkedin: '',
       github: '',
       portfolio: '',
@@ -126,7 +128,8 @@ function PersonalInfoContent() {
             fullName: resume.title || userInfo.user.user_metadata?.full_name || '',
             email: userInfo.user.email || '',
             phone: profile.phone_number || '',
-            location: '', // Location not in user_profiles yet
+            location: profile.location || '',
+            dateOfBirth: profile.date_of_birth || '',
             linkedin: profile.linkedin_url || '',
             github: profile.github_url || '',
             portfolio: profile.portfolio_url || '',
@@ -156,6 +159,7 @@ function PersonalInfoContent() {
           email: guestData.personal.email || '',
           phone: guestData.personal.phone || '',
           location: guestData.personal.location || '',
+          dateOfBirth: guestData.personal.dateOfBirth || '',
           linkedin: guestData.personal.linkedin || '',
           github: guestData.personal.github || '',
           portfolio: guestData.personal.portfolio || '',
@@ -190,6 +194,7 @@ function PersonalInfoContent() {
           email: data.email,
           phone: data.phone,
           location: data.location || '',
+          date_of_birth: data.dateOfBirth || null,
           linkedin_url: data.linkedin || '',
           github_url: data.github || '',
           portfolio_url: data.portfolio || '',
@@ -206,6 +211,7 @@ function PersonalInfoContent() {
             email: data.email,
             phone: data.phone,
             location: data.location || '',
+            dateOfBirth: data.dateOfBirth || '',
             linkedin: data.linkedin || '',
             github: data.github || '',
             portfolio: data.portfolio || '',
@@ -369,6 +375,15 @@ function PersonalInfoContent() {
                             id="location"
                             placeholder="New York, NY"
                             {...register('location')}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                          <Input
+                            id="dateOfBirth"
+                            type="date"
+                            {...register('dateOfBirth')}
                           />
                         </div>
 

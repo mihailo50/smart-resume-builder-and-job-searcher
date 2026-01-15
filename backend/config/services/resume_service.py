@@ -98,8 +98,10 @@ class ResumeService(BaseSupabaseService):
                     resume['linkedin_url'] = user_profile.get('linkedin_url', '')
                     resume['github_url'] = user_profile.get('github_url', '')
                     resume['portfolio_url'] = user_profile.get('portfolio_url', '')
+                    resume['avatar_url'] = user_profile.get('avatar', '')  # Photo URL
+                    resume['date_of_birth'] = user_profile.get('date_of_birth', '')
                     resume['user_profile'] = user_profile
-                    logger.debug(f"Fetched user profile for resume {resume_id}: email={bool(resume.get('email'))}, phone={bool(resume.get('phone'))}, location={bool(resume.get('location'))}")
+                    logger.debug(f"Fetched user profile for resume {resume_id}: email={bool(resume.get('email'))}, phone={bool(resume.get('phone'))}, location={bool(resume.get('location'))}, avatar={bool(resume.get('avatar_url'))}")
                 
                 # Fallback: if no email in profile, try to get from Supabase auth
                 if not resume.get('email'):
