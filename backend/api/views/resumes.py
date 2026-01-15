@@ -585,6 +585,12 @@ class ResumeViewSet(viewsets.ViewSet):
         # Use photo_url from params, or fallback to avatar from user profile
         photo_url = params.get('photo_url') or resume.get('avatar_url') or resume.get('user_profile', {}).get('avatar')
         
+        # Debug logging for photo URL
+        logger.info(f"[PHOTO DEBUG] params.photo_url: {params.get('photo_url')}")
+        logger.info(f"[PHOTO DEBUG] resume.avatar_url: {resume.get('avatar_url')}")
+        logger.info(f"[PHOTO DEBUG] user_profile.avatar: {resume.get('user_profile', {}).get('avatar')}")
+        logger.info(f"[PHOTO DEBUG] Final photo_url: {photo_url}")
+        
         # Log what we're getting from database
         logger.info(
             f"Exporting resume {pk} - "
