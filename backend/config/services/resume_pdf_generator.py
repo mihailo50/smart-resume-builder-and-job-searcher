@@ -191,23 +191,61 @@ class PremiumResumePDFGenerator:
         # Process photo - download and resize external images to prevent memory issues
         photo_base64 = None
         
-        logger.info(f"[PDF PHOTO] Received photo_url: {photo_url}")
+        logger.info(f"[PDF PHOTO] Received photo_url: {photo_url[:100] if photo_url else None}...")
         logger.info(f"[PDF PHOTO] Received photo_data: {bool(photo_data)}")
         
         if photo_url:
-            # Download and resize external image to prevent WeasyPrint memory issues
-            logger.info(f"[PDF PHOTO] Processing photo URL: {photo_url}")
-            processed_image = self._download_and_resize_image(photo_url, max_size=200)
-            if processed_image:
-                # Extract base64 data (remove data URI prefix)
-                if processed_image.startswith('data:'):
-                    # Keep full data URI for template
-                    photo_base64 = processed_image.split(',')[1] if ',' in processed_image else None
-                else:
-                    photo_base64 = processed_image
-                logger.info(f"[PDF PHOTO] Photo processed successfully, base64 length: {len(photo_base64) if photo_base64 else 0}")
+            # Check if it's a data URL (base64 encoded image from frontend upload)
+            if photo_url.startswith('data:'):
+                logger.info(f"[PDF PHOTO] Processing data URL (base64 image from upload)")
+                try:
+                    # Extract base64 data from data URL
+                    # Format: data:image/jpeg;base64,/9j/4AAQ...
+                    header, data = photo_url.split(',', 1)
+                    image_bytes = base64.b64decode(data)
+                    
+                    # Resize the image to prevent memory issues
+                    if PIL_AVAILABLE:
+                        with Image.open(io.BytesIO(image_bytes)) as img:
+                            # Convert to RGB if necessary
+                            if img.mode in ('RGBA', 'P', 'LA'):
+                                background = Image.new('RGB', img.size, (255, 255, 255))
+                                if img.mode == 'P':
+                                    img = img.convert('RGBA')
+                                background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                                img = background
+                            elif img.mode != 'RGB':
+                                img = img.convert('RGB')
+                            
+                            # Resize if larger than 200px
+                            if img.width > 200 or img.height > 200:
+                                img.thumbnail((200, 200), Image.Resampling.LANCZOS)
+                                logger.info(f"[PDF PHOTO] Resized image to {img.size}")
+                            
+                            # Save as JPEG
+                            output = io.BytesIO()
+                            img.save(output, format='JPEG', quality=85, optimize=True)
+                            photo_base64 = base64.b64encode(output.getvalue()).decode('utf-8')
+                            logger.info(f"[PDF PHOTO] Data URL processed successfully, base64 length: {len(photo_base64)}")
+                    else:
+                        # PIL not available, use raw base64 (may cause memory issues)
+                        photo_base64 = data
+                        logger.warning(f"[PDF PHOTO] PIL not available, using raw base64 (may cause memory issues)")
+                except Exception as e:
+                    logger.error(f"[PDF PHOTO] Error processing data URL: {e}")
             else:
-                logger.warning(f"[PDF PHOTO] Failed to process photo from URL, will use initials fallback")
+                # Regular URL - download and resize
+                logger.info(f"[PDF PHOTO] Processing external URL: {photo_url}")
+                processed_image = self._download_and_resize_image(photo_url, max_size=200)
+                if processed_image:
+                    # Extract base64 data (remove data URI prefix)
+                    if processed_image.startswith('data:'):
+                        photo_base64 = processed_image.split(',')[1] if ',' in processed_image else None
+                    else:
+                        photo_base64 = processed_image
+                    logger.info(f"[PDF PHOTO] External URL processed successfully, base64 length: {len(photo_base64) if photo_base64 else 0}")
+                else:
+                    logger.warning(f"[PDF PHOTO] Failed to process external URL, will use initials fallback")
         elif photo_data:
             # Process provided photo data - resize if needed
             if PIL_AVAILABLE:
