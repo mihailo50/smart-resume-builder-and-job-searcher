@@ -5,6 +5,7 @@ Generates stunning, professional resumes with multiple template options.
 """
 import logging
 import io
+import requests
 from typing import Dict, Any, Optional, Tuple
 from pathlib import Path
 from django.template.loader import render_to_string
@@ -12,37 +13,31 @@ from django.conf import settings
 from django.core.files.storage import default_storage
 import base64
 
+# Try to import PIL for image processing
+try:
+    from PIL import Image
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
-# Lazy-loaded WeasyPrint components (loaded only when PDF generation is needed)
-_weasyprint_html = None
-_weasyprint_css = None
-_weasyprint_font_config = None
-_weasyprint_checked = False
-_weasyprint_available = None
+# Try to import WeasyPrint (preferred method)
+try:
+    from weasyprint import HTML, CSS
+    from weasyprint.text.fonts import FontConfiguration
+    WEASYPRINT_AVAILABLE = True
+except (ImportError, OSError) as e:
+    WEASYPRINT_AVAILABLE = False
+    logger.warning(f"WeasyPrint not available: {e}")
+    logger.warning("Falling back to reportlab. For WeasyPrint, install GTK runtime on Windows.")
 
-def _ensure_weasyprint():
-    """Lazy-load WeasyPrint only when PDF generation is actually needed."""
-    global _weasyprint_html, _weasyprint_css, _weasyprint_font_config, _weasyprint_checked, _weasyprint_available
-    
-    if _weasyprint_checked:
-        return _weasyprint_available
-    
-    _weasyprint_checked = True
-    try:
-        from weasyprint import HTML, CSS
-        from weasyprint.text.fonts import FontConfiguration
-        _weasyprint_html = HTML
-        _weasyprint_css = CSS
-        _weasyprint_font_config = FontConfiguration
-        _weasyprint_available = True
-        logger.info("WeasyPrint loaded successfully for PDF generation")
-        return True
-    except (ImportError, OSError) as e:
-        _weasyprint_available = False
-        logger.warning(f"WeasyPrint not available: {e}")
-        logger.warning("PDF generation will fail. For WeasyPrint, install GTK runtime on Windows.")
-        return False
+# Try to import Playwright (fallback for complex gradients/icons)
+try:
+    from playwright.sync_api import sync_playwright
+    PLAYWRIGHT_AVAILABLE = False  # Disabled by default, enable when needed
+except ImportError:
+    PLAYWRIGHT_AVAILABLE = False
 
 # Try to import qrcode for QR code generation
 try:
@@ -95,7 +90,9 @@ class PremiumResumePDFGenerator:
         """Initialize the PDF generator."""
         self.template_dir = Path(settings.BASE_DIR) / 'templates' / 'resumes'
         self.static_dir = Path(settings.BASE_DIR) / 'static'
-        # WeasyPrint is now lazy-loaded, no check needed at init time
+        
+        if not WEASYPRINT_AVAILABLE:
+            logger.error("WeasyPrint is required for PDF generation. Install with: pip install weasyprint")
     
     def generate_pdf(
         self,
@@ -119,8 +116,7 @@ class PremiumResumePDFGenerator:
         Returns:
             Tuple of (pdf_bytes, html_preview)
         """
-        # Lazy-load WeasyPrint only when actually generating a PDF
-        if not _ensure_weasyprint():
+        if not WEASYPRINT_AVAILABLE:
             raise ImportError("WeasyPrint is required. Install with: pip install weasyprint")
         
         # Validate template
@@ -182,75 +178,6 @@ class PremiumResumePDFGenerator:
             logger.error(f"Error generating PDF: {e}")
             raise
     
-    def _parse_date(self, date_value) -> Optional[Any]:
-        """Convert date string to Python date object for Django template filters."""
-        if not date_value:
-            logger.debug(f"_parse_date: empty value")
-            return None
-        if hasattr(date_value, 'strftime'):  # Already a date/datetime object
-            logger.debug(f"_parse_date: already a date object: {date_value}")
-            return date_value
-        if isinstance(date_value, str):
-            try:
-                from datetime import datetime
-                # Try ISO format first (YYYY-MM-DD)
-                parsed = datetime.strptime(date_value[:10], '%Y-%m-%d').date()
-                logger.info(f"_parse_date: SUCCESS parsed '{date_value}' -> {parsed}")
-                return parsed
-            except (ValueError, TypeError) as e:
-                logger.warning(f"_parse_date: failed to parse '{date_value}': {e}")
-                return None
-        logger.debug(f"_parse_date: unknown type {type(date_value)}: {date_value}")
-        return None
-    
-    def _format_date(self, date_value) -> str:
-        """Format date as 'Mon YYYY' string for direct template use."""
-        if not date_value:
-            return ''
-        
-        # If it's a string, parse it first
-        if isinstance(date_value, str):
-            date_value = self._parse_date(date_value)
-        
-        if date_value and hasattr(date_value, 'strftime'):
-            return date_value.strftime('%b %Y')  # e.g., "Aug 2024"
-        return ''
-    
-    def _format_date_range(self, start_date, end_date, is_current: bool = False) -> str:
-        """
-        Format a date range with en-dash separator.
-        If end_date is in the future or is_current is True, show "Present".
-        Returns: "Aug 2024 – Mar 2025" or "Aug 2024 – Present"
-        """
-        from datetime import date
-        
-        start_str = self._format_date(start_date)
-        if not start_str:
-            return ''
-        
-        # Check if current or if end_date is in the future
-        if is_current:
-            return f"{start_str} – Present"
-        
-        if end_date:
-            # Parse end_date if it's a string
-            end_parsed = end_date
-            if isinstance(end_date, str):
-                end_parsed = self._parse_date(end_date)
-            
-            # Check if end_date is in the future
-            if end_parsed and hasattr(end_parsed, 'year'):
-                today = date.today()
-                if end_parsed > today:
-                    logger.info(f"End date {end_parsed} is in the future, using 'Present'")
-                    return f"{start_str} – Present"
-            
-            end_str = self._format_date(end_date)
-            if end_str:
-                return f"{start_str} – {end_str}"
-        
-        return f"{start_str} – Present"
-    
     def _prepare_context(
         self,
         resume_data: Dict[str, Any],
@@ -261,14 +188,49 @@ class PremiumResumePDFGenerator:
         photo_url: Optional[str] = None
     ) -> Dict[str, Any]:
         """Prepare context for template rendering."""
-        # Process photo - try photo_url first, then photo_data
+        # Process photo - download and resize external images to prevent memory issues
         photo_base64 = None
-        photo_url_actual = None
         
         if photo_url:
-            photo_url_actual = photo_url
+            # Download and resize external image to prevent WeasyPrint memory issues
+            logger.debug(f"Processing photo URL: {photo_url}")
+            processed_image = self._download_and_resize_image(photo_url, max_size=200)
+            if processed_image:
+                # Extract base64 data (remove data URI prefix)
+                if processed_image.startswith('data:'):
+                    # Keep full data URI for template
+                    photo_base64 = processed_image.split(',')[1] if ',' in processed_image else None
+                else:
+                    photo_base64 = processed_image
+                logger.debug(f"Photo processed successfully")
+            else:
+                logger.warning(f"Failed to process photo from URL, will use initials fallback")
         elif photo_data:
-            photo_base64 = base64.b64encode(photo_data).decode('utf-8')
+            # Process provided photo data - resize if needed
+            if PIL_AVAILABLE:
+                try:
+                    with Image.open(io.BytesIO(photo_data)) as img:
+                        # Convert and resize
+                        if img.mode in ('RGBA', 'P', 'LA'):
+                            background = Image.new('RGB', img.size, (255, 255, 255))
+                            if img.mode == 'P':
+                                img = img.convert('RGBA')
+                            background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                            img = background
+                        elif img.mode != 'RGB':
+                            img = img.convert('RGB')
+                        
+                        if img.width > 200 or img.height > 200:
+                            img.thumbnail((200, 200), Image.Resampling.LANCZOS)
+                        
+                        output = io.BytesIO()
+                        img.save(output, format='JPEG', quality=85, optimize=True)
+                        photo_base64 = base64.b64encode(output.getvalue()).decode('utf-8')
+                except Exception as e:
+                    logger.warning(f"Error processing photo data: {e}")
+                    photo_base64 = base64.b64encode(photo_data).decode('utf-8')
+            else:
+                photo_base64 = base64.b64encode(photo_data).decode('utf-8')
         
         # Get user profile data
         user_profile = resume_data.get('user_profile', {})
@@ -284,65 +246,14 @@ class PremiumResumePDFGenerator:
         # Generate initials for fallback
         initials = self._generate_initials(full_name)
         
-        # Prepare contact info - check multiple sources
-        contact_email = (
-            resume_data.get('email') or 
-            user_profile.get('email') or 
-            resume_data.get('user_profile', {}).get('email', '')
-        )
-        contact_phone = (
-            resume_data.get('phone') or 
-            user_profile.get('phone_number') or  # user_profiles table uses phone_number
-            user_profile.get('phone') or 
-            resume_data.get('user_profile', {}).get('phone_number', '') or
-            resume_data.get('user_profile', {}).get('phone', '')
-        )
-        contact_location = (
-            resume_data.get('location') or 
-            user_profile.get('location') or 
-            resume_data.get('user_profile', {}).get('location', '')
-        )
-        contact_linkedin = (
-            resume_data.get('linkedin_url') or 
-            user_profile.get('linkedin_url') or 
-            resume_data.get('user_profile', {}).get('linkedin_url', '')
-        )
-        contact_github = (
-            resume_data.get('github_url') or 
-            user_profile.get('github_url') or 
-            resume_data.get('user_profile', {}).get('github_url', '')
-        )
-        contact_portfolio = (
-            resume_data.get('portfolio_url') or 
-            user_profile.get('portfolio_url') or 
-            resume_data.get('user_profile', {}).get('portfolio_url', '')
-        )
-        
-        # Log contact info for debugging
-        logger.info(f"Contact info - email: '{contact_email}', phone: '{contact_phone}', location: '{contact_location}', github: '{contact_github}'")
-        
-        # Extract display-friendly versions of URLs (e.g., "github.com/mihailo50" from full URL)
-        github_display = ''
-        if contact_github:
-            # Extract username from GitHub URL: https://github.com/username -> github.com/username
-            github_display = contact_github.replace('https://', '').replace('http://', '').rstrip('/')
-        
-        linkedin_display = ''
-        if contact_linkedin:
-            # Extract from LinkedIn URL: https://linkedin.com/in/username -> linkedin.com/in/username
-            linkedin_display = contact_linkedin.replace('https://', '').replace('http://', '').replace('www.', '').rstrip('/')
-        
-        portfolio_display = ''
-        if contact_portfolio:
-            portfolio_display = contact_portfolio.replace('https://', '').replace('http://', '').replace('www.', '').rstrip('/')
-        
+        # Prepare contact info
         contact_info = {
-            'email': contact_email,
-            'phone': contact_phone,
-            'location': contact_location,
-            'linkedin': contact_linkedin,
-            'github': contact_github,
-            'portfolio': contact_portfolio,
+            'email': resume_data.get('email') or user_profile.get('email', ''),
+            'phone': resume_data.get('phone') or user_profile.get('phone', ''),
+            'location': resume_data.get('location') or user_profile.get('location', ''),
+            'linkedin': resume_data.get('linkedin_url') or user_profile.get('linkedin_url', ''),
+            'github': resume_data.get('github_url') or user_profile.get('github_url', ''),
+            'portfolio': resume_data.get('portfolio_url') or user_profile.get('portfolio_url', ''),
         }
         
         # Professional title/tagline - DO NOT use resume_data.get('title') as fallback
@@ -365,28 +276,6 @@ class PremiumResumePDFGenerator:
         else:
             experiences = []
         
-        # Fix double punctuation in company names and convert dates
-        for exp in experiences:
-            if isinstance(exp, dict):
-                company = exp.get('company', '')
-                # Store original company name, template should handle separator logic
-                exp['company_raw'] = company
-                # Add flag if company name ends with period (for template logic)
-                exp['company_ends_with_period'] = company.rstrip().endswith('.') if company else False
-                # Convert date strings to date objects AND pre-formatted strings
-                raw_start = exp.get('start_date')
-                raw_end = exp.get('end_date')
-                is_current = exp.get('is_current', False)
-                logger.info(f"Experience '{company}' raw dates: start='{raw_start}', end='{raw_end}', is_current={is_current}")
-                exp['start_date'] = self._parse_date(raw_start)
-                exp['end_date'] = self._parse_date(raw_end)
-                # Pre-formatted dates
-                exp['start_date_formatted'] = self._format_date(raw_start)
-                exp['end_date_formatted'] = self._format_date(raw_end)
-                # Combined date range with en-dash (handles future dates -> "Present")
-                exp['date_range'] = self._format_date_range(raw_start, raw_end, is_current)
-                logger.info(f"Experience '{company}' date_range: '{exp['date_range']}'")
-        
         # Sort education by start date (most recent first)
         educations_raw = resume_data.get('educations') or []
         if isinstance(educations_raw, list) and len(educations_raw) > 0:
@@ -397,68 +286,6 @@ class PremiumResumePDFGenerator:
             )
         else:
             educations = []
-        
-        # Clean up education titles
-        for edu in educations:
-            if isinstance(edu, dict):
-                degree = edu.get('degree', '')
-                field_of_study = edu.get('field_of_study', '')
-                institution = edu.get('institution', '')
-                
-                # ENFORCE: Replace "Python Developer in Python programming language" -> "Certified Python Developer"
-                # Check both degree alone and degree + field_of_study combination
-                full_degree_text = f"{degree} in {field_of_study}".lower() if field_of_study else degree.lower()
-                
-                if 'python developer' in full_degree_text and 'python' in full_degree_text:
-                    edu['degree_display'] = 'Certified Python Developer'
-                    edu['degree_cleaned'] = True
-                    # Clear field_of_study so template doesn't append it again
-                    edu['field_of_study'] = ''
-                    logger.info(f"Education title cleaned: '{degree}' + '{field_of_study}' -> 'Certified Python Developer'")
-                else:
-                    edu['degree_display'] = degree
-                
-                # Check if this is a High School entry for special formatting
-                combined_text = (degree + ' ' + institution).lower()
-                is_high_school = any(term in combined_text for term in 
-                    ['high school', 'secondary school', 'gymnasium', 'srednja škola', 'gimnazija', 
-                     'general education', 'high school general'])
-                edu['is_high_school'] = is_high_school
-                
-                # Clean up High School entries: "High School General - Vuk Karadzic" -> separate degree/institution
-                if is_high_school:
-                    # Set a clean degree name
-                    if 'general' in degree.lower() or not degree or degree.lower() == institution.lower():
-                        edu['degree_display'] = 'High School Diploma'
-                    elif 'gymnasium' in degree.lower() or 'gimnazija' in degree.lower():
-                        edu['degree_display'] = 'Gymnasium Diploma'
-                    else:
-                        edu['degree_display'] = degree
-                    
-                    # Clean up institution name (remove "High School" prefix if redundant)
-                    inst_clean = institution
-                    if ' - ' in institution:
-                        # Handle "High School General - Vuk Karadzic" format
-                        parts = institution.split(' - ')
-                        if len(parts) == 2:
-                            inst_clean = parts[1].strip() + ' High School'
-                    elif institution.lower().startswith('high school '):
-                        inst_clean = institution[12:].strip() + ' High School'
-                    
-                    edu['institution_display'] = inst_clean if inst_clean else institution
-                
-            # Convert date strings to date objects AND pre-formatted strings
-            # This MUST be outside the is_high_school block to apply to ALL education entries
-            raw_start = edu.get('start_date')
-            raw_end = edu.get('end_date')
-            is_current = edu.get('is_current', False)
-            edu['start_date'] = self._parse_date(raw_start)
-            edu['end_date'] = self._parse_date(raw_end)
-            edu['start_date_formatted'] = self._format_date(raw_start)
-            edu['end_date_formatted'] = self._format_date(raw_end)
-            # Combined date range with en-dash
-            edu['date_range'] = self._format_date_range(raw_start, raw_end, is_current)
-            logger.info(f"Education '{edu.get('degree', '')}' date_range: '{edu['date_range']}'")
         
         # Group skills by category
         skills_by_category = {}
@@ -492,54 +319,12 @@ class PremiumResumePDFGenerator:
         skills_list = resume_data.get('skills') or []
         
         # Fix project objects - add 'name' field from 'title' for template compatibility
-        # Also prioritize specific projects: Holograph, Translatr, Smart Resume Builder
         projects_raw = resume_data.get('projects') or []
         projects_list = []
-        priority_projects = []
-        other_projects = []
-        
-        # Priority project names (case-insensitive partial match)
-        priority_names = ['holograph', 'translatr', 'smart resume', 'resume builder']
-        
         for p in projects_raw:
             project = dict(p) if isinstance(p, dict) else {}
             project['name'] = project.get('title', project.get('name', ''))
-            project_title = project['name'].lower() if project['name'] else ''
-            # Convert date strings to date objects AND pre-formatted strings
-            raw_start = project.get('start_date')
-            raw_end = project.get('end_date')
-            project['start_date'] = self._parse_date(raw_start)
-            project['end_date'] = self._parse_date(raw_end)
-            project['start_date_formatted'] = self._format_date(raw_start)
-            project['end_date_formatted'] = self._format_date(raw_end)
-            # Combined date range with en-dash (handles future dates -> "Present")
-            project['date_range'] = self._format_date_range(raw_start, raw_end, False)
-            
-            # Truncate tech stack to max 5 key technologies
-            technologies = project.get('technologies', '')
-            if technologies:
-                # Split by comma and take first 5
-                tech_list = [t.strip() for t in technologies.split(',')]
-                # For "Smart Resume Builder", use curated list
-                if 'smart resume' in project_title or 'resume builder' in project_title:
-                    project['technologies_short'] = 'Django, React, OpenAI API, Supabase, TypeScript'
-                elif len(tech_list) > 5:
-                    project['technologies_short'] = ', '.join(tech_list[:5])
-                else:
-                    project['technologies_short'] = technologies
-            else:
-                project['technologies_short'] = ''
-            
-            # Check if this is a priority project
-            is_priority = any(pn in project_title for pn in priority_names)
-            
-            if is_priority:
-                priority_projects.append(project)
-            else:
-                other_projects.append(project)
-        
-        # Combine: priority projects first, then others
-        projects_list = priority_projects + other_projects
+            projects_list.append(project)
         
         # Fix certification objects - add both 'name' and 'title' fields for template compatibility
         certs_raw = resume_data.get('certifications') or []
@@ -549,13 +334,6 @@ class PremiumResumePDFGenerator:
             # Ensure both name and title exist
             cert['name'] = cert.get('name') or cert.get('title', '')
             cert['title'] = cert.get('title') or cert.get('name', '')
-            # Convert date strings to date objects AND pre-formatted strings
-            raw_issue = cert.get('issue_date')
-            raw_expiry = cert.get('expiry_date')
-            cert['issue_date'] = self._parse_date(raw_issue)
-            cert['expiry_date'] = self._parse_date(raw_expiry)
-            cert['issue_date_formatted'] = self._format_date(raw_issue)
-            cert['expiry_date_formatted'] = self._format_date(raw_expiry)
             certifications_list.append(cert)
         
         languages_list = resume_data.get('languages') or []
@@ -579,17 +357,6 @@ class PremiumResumePDFGenerator:
             'professional_tagline': resume_data.get('professional_tagline', ''),
             'summary': summary_text,
             'contact': contact_info,
-            # Also add individual contact variables for direct access in templates
-            'contact_email': contact_email,
-            'contact_phone': contact_phone,
-            'contact_location': contact_location,
-            'contact_linkedin': contact_linkedin,
-            'contact_github': contact_github,
-            'contact_portfolio': contact_portfolio,
-            # Display-friendly versions of URLs (without https://)
-            'github_display': github_display,
-            'linkedin_display': linkedin_display,
-            'portfolio_display': portfolio_display,
             'experiences': experiences,  # Already a list
             'educations': educations,  # Already a list
             'skills': skills_list,  # Guaranteed to be a list
@@ -602,7 +369,7 @@ class PremiumResumePDFGenerator:
             'fonts': fonts,
             'ats_mode': ats_mode,
             'photo_base64': photo_base64,
-            'photo_url': photo_url_actual,
+            'photo_url': None,  # Always use photo_base64 to prevent WeasyPrint memory issues
             'photo_hexagon': template_name in ['tech-cyan', 'sidebar-teal'],
             'initials': initials,
         }
@@ -650,10 +417,89 @@ class PremiumResumePDFGenerator:
             logger.warning(f"Error generating QR code: {e}")
             return None
     
+    def _download_and_resize_image(self, url: str, max_size: int = 200) -> Optional[str]:
+        """
+        Download an image from URL, resize it, and return as base64.
+        This prevents memory issues with large external images.
+        
+        Args:
+            url: The image URL to download
+            max_size: Maximum dimension (width or height) in pixels
+            
+        Returns:
+            Base64 data URI string or None if failed
+        """
+        if not PIL_AVAILABLE:
+            logger.warning("PIL not available, skipping image download")
+            return None
+        
+        try:
+            # Download image with timeout
+            response = requests.get(url, timeout=10, stream=True)
+            response.raise_for_status()
+            
+            # Check content length - skip if too large (> 10MB)
+            content_length = response.headers.get('content-length')
+            if content_length and int(content_length) > 10 * 1024 * 1024:
+                logger.warning(f"Image too large ({content_length} bytes), skipping")
+                return None
+            
+            # Read image data
+            image_data = io.BytesIO()
+            bytes_read = 0
+            max_bytes = 10 * 1024 * 1024  # 10MB limit
+            
+            for chunk in response.iter_content(chunk_size=8192):
+                bytes_read += len(chunk)
+                if bytes_read > max_bytes:
+                    logger.warning(f"Image exceeded {max_bytes} bytes during download, skipping")
+                    return None
+                image_data.write(chunk)
+            
+            image_data.seek(0)
+            
+            # Open and resize image
+            with Image.open(image_data) as img:
+                # Convert to RGB if necessary (handles RGBA, P mode, etc.)
+                if img.mode in ('RGBA', 'P', 'LA'):
+                    # Create white background for transparency
+                    background = Image.new('RGB', img.size, (255, 255, 255))
+                    if img.mode == 'P':
+                        img = img.convert('RGBA')
+                    background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                    img = background
+                elif img.mode != 'RGB':
+                    img = img.convert('RGB')
+                
+                # Resize if larger than max_size
+                if img.width > max_size or img.height > max_size:
+                    img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+                    logger.debug(f"Resized image to {img.size}")
+                
+                # Save to bytes as JPEG (smaller than PNG)
+                output = io.BytesIO()
+                img.save(output, format='JPEG', quality=85, optimize=True)
+                img_bytes = output.getvalue()
+                
+                # Convert to base64
+                img_base64 = base64.b64encode(img_bytes).decode('utf-8')
+                logger.debug(f"Downloaded and processed image: {len(img_bytes)} bytes")
+                
+                return f"data:image/jpeg;base64,{img_base64}"
+                
+        except requests.exceptions.Timeout:
+            logger.warning(f"Timeout downloading image from {url}")
+            return None
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Error downloading image from {url}: {e}")
+            return None
+        except Exception as e:
+            logger.warning(f"Error processing image from {url}: {e}")
+            return None
+    
     def _generate_pdf_from_html(self, html_content: str, template_name: str) -> bytes:
         """Generate PDF from HTML using WeasyPrint - NO FALLBACK."""
-        # Ensure WeasyPrint is loaded (lazy import)
-        if not _ensure_weasyprint():
+        if not WEASYPRINT_AVAILABLE:
             raise ImportError(
                 "WeasyPrint is REQUIRED for styled PDF generation. "
                 "Install with: pip install weasyprint. "
@@ -667,13 +513,13 @@ class PremiumResumePDFGenerator:
         logger.info(f"Full HTML length: {len(html_content)} chars")
         
         try:
-            # Configure fonts using lazy-loaded FontConfiguration
-            font_config = _weasyprint_font_config()
+            # Configure fonts
+            font_config = FontConfiguration()
             
             # CRITICAL FIX: WeasyPrint needs base_url=None to resolve absolute URLs
             # But we also need to ensure CSS is processed
             # Try with None first (allows absolute URLs like https://fonts.googleapis.com)
-            html_doc = _weasyprint_html(string=html_content, base_url=None)
+            html_doc = HTML(string=html_content, base_url=None)
             
             logger.debug(f"=== WEASYPRINT GENERATION ===")
             logger.debug(f"HTML doc created, length: {len(html_content)}")
