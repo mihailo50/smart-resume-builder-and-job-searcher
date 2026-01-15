@@ -219,6 +219,7 @@ class PersonalInfoSerializer(serializers.Serializer):
     github_url = serializers.URLField(required=False, allow_blank=True)
     portfolio_url = serializers.URLField(required=False, allow_blank=True)
     date_of_birth = serializers.DateField(required=False, allow_null=True)
+    avatar_url = serializers.URLField(required=False, allow_blank=True, allow_null=True)
 
 
 class ProfessionalTaglineSerializer(serializers.Serializer):

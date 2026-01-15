@@ -299,6 +299,8 @@ class ResumeViewSet(viewsets.ViewSet):
         if 'date_of_birth' in serializer.validated_data:
             dob = serializer.validated_data['date_of_birth']
             profile_update_kwargs['date_of_birth'] = str(dob) if dob else None
+        if 'avatar_url' in serializer.validated_data:
+            profile_update_kwargs['avatar_url'] = serializer.validated_data['avatar_url'] or None
         
         # Update or create user profile
         logger.info(f"[PERSONAL INFO] Updating user profile with: {profile_update_kwargs}")
@@ -329,6 +331,7 @@ class ResumeViewSet(viewsets.ViewSet):
             'github_url': updated_profile.get('github_url', '') or '',
             'portfolio_url': updated_profile.get('portfolio_url', '') or '',
             'date_of_birth': updated_profile.get('date_of_birth', '') or '',
+            'avatar_url': updated_profile.get('avatar', '') or '',
             'message': 'Personal info saved successfully',
         }
         
