@@ -191,9 +191,12 @@ class PremiumResumePDFGenerator:
         # Process photo - download and resize external images to prevent memory issues
         photo_base64 = None
         
+        logger.info(f"[PDF PHOTO] Received photo_url: {photo_url}")
+        logger.info(f"[PDF PHOTO] Received photo_data: {bool(photo_data)}")
+        
         if photo_url:
             # Download and resize external image to prevent WeasyPrint memory issues
-            logger.debug(f"Processing photo URL: {photo_url}")
+            logger.info(f"[PDF PHOTO] Processing photo URL: {photo_url}")
             processed_image = self._download_and_resize_image(photo_url, max_size=200)
             if processed_image:
                 # Extract base64 data (remove data URI prefix)
@@ -202,9 +205,9 @@ class PremiumResumePDFGenerator:
                     photo_base64 = processed_image.split(',')[1] if ',' in processed_image else None
                 else:
                     photo_base64 = processed_image
-                logger.debug(f"Photo processed successfully")
+                logger.info(f"[PDF PHOTO] Photo processed successfully, base64 length: {len(photo_base64) if photo_base64 else 0}")
             else:
-                logger.warning(f"Failed to process photo from URL, will use initials fallback")
+                logger.warning(f"[PDF PHOTO] Failed to process photo from URL, will use initials fallback")
         elif photo_data:
             # Process provided photo data - resize if needed
             if PIL_AVAILABLE:
